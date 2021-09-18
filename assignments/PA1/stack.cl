@@ -45,8 +45,8 @@ class StackCommandDispatcher {
 		if evalStackCommand.isApplicable(command) then 
 			if stack.isEmpty() then stack 
 			else let top: String <- stack.top() in { 
-				if switchStackCommand.isApplicable(top) then switchStackCommand.apply(stack, top) 
-				else if sumStackCommand.isApplicable(top) then sumStackCommand.apply(stack, top) 	
+				if switchStackCommand.isApplicable(top) then switchStackCommand.apply(stack.pop(), top) 
+				else if sumStackCommand.isApplicable(top) then sumStackCommand.apply(stack.pop(), top) 	
 				else stack fi fi; 
 			} fi
 		else if printStackCommand.isApplicable(command) then printStackCommand.apply(stack, command) 
@@ -93,7 +93,7 @@ class SumStackCommand inherits StackCommand {
 		let s1 : String <- stack.top() in {
 			stack <- stack.pop();
 			let s2 : String <- stack.top() in {
-				stack.pop().push(a2i.i2c(a2i.c2i(s1) + a2i.c2i(s2)));
+				stack.pop().push(a2i.i2a(a2i.a2i(s1) + a2i.a2i(s2)));
 			};
 		}
 	};
