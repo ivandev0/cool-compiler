@@ -1,0 +1,33 @@
+SPIM Version 6.5 of January 4, 2003
+Copyright 1990-2003 by James R. Larus (larus@cs.wisc.edu).
+All Rights Reserved.
+See the file README for a full copyright notice.
+Loaded: ../lib/trap.handler
+s
+2
++
+1
+3
+s
+s
+s
+1
++
+3
+4
+7
++
+2
++
+4
+s
+7
++
+2
++
+4
+9
++
+4
+13
+COOL program successfully executed

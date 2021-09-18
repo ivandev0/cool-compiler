@@ -18,7 +18,8 @@ stack.s: stack.cl atoi.cl
 
 test:	compile
 	@echo stack.test
-	${CLASSDIR}/bin/spim -file stack.s < stack.test
+	(${CLASSDIR}/bin/spim -file stack.s < stack.test) > actual.txt
+	git diff --no-index expected.txt actual.txt 
 
 clean :
 	rm -f *.s core *~
