@@ -2,28 +2,39 @@
 #include "Utils.h"
 
 bool Lexer::hasNext() {
+    if (isAtEnd()) return false;
+    while (!isAtEnd()) {
+        if (peek() == '-' && peekNext() == '-') {
+            while (peek() != '\n' && !isAtEnd()) advance();
+        }
+        if (peek() == '(' && peekNext() == '*') {
+            advance();
+            if (!tryToSkipMultiLineComment()) return true;
+        }
+        if (isAtEnd()) return false;
+        if (!isWhitespace(peek())) return true;
+        advance();
+    }
     return !isAtEnd();
 }
 
 Token Lexer::next() {
-    while (offset < program.length()) {
-        auto c = advance();
-        switch (c) {
-            case ' ':
-            case '\f':
-            case '\r':
-            case '\t':
-            case '\v':
-                // Ignore whitespace.
-                break;
-            case '\n': lineNumber++; break;
+    if (isAtEnd() && comments != 0) {
+        return {Token::Kind::ERROR, "EOF in comment", lineNumber};
+    }
 
+    while (!isAtEnd()) {
+        auto c = advance();
+        if (isWhitespace(c)) continue;
+        switch (c) {
             case '{':
             case '}':
+            case '(':
             case ')':
+            case ':':
             case ';':
             case '+':
-            case '*':
+            case '-':
             case '/':
             case '.':
             case '@':
@@ -36,19 +47,9 @@ Token Lexer::next() {
                 } else {
                     return {std::string(1, c), lineNumber};
                 }
-            case '-':
-                if (match('-')) {
-                    // skip comment
-                    while (peek() != '\n' && !isAtEnd()) advance();
-                    break;
-                } else {
-                    return {std::string(1, c), lineNumber};
-                }
-
-            case '(':
-                if (match('*')) {
-                    if (!tryToSkipMultiLineComment()) return {Token::Kind::ERROR, "EOF in comment", lineNumber};
-                    break;
+            case '*':
+                if (match(')')) {
+                    return {Token::Kind::ERROR, "Unmatched *)", lineNumber};
                 } else {
                     return {std::string(1, c), lineNumber};
                 }
@@ -77,6 +78,7 @@ Token Lexer::next() {
 }
 
 char Lexer::advance() {
+    if (program.at(offset) == '\n') lineNumber++;
     return program.at(offset++);
 }
 
@@ -94,7 +96,7 @@ bool Lexer::match(char expected) {
     if (isAtEnd()) return false;
     if (program.at(offset) != expected) return false;
 
-    offset++;
+    advance();
     return true;
 }
 
@@ -163,7 +165,7 @@ Token::Kind Lexer::getKeywordType(const std::string& str) {
 }
 
 bool Lexer::tryToSkipMultiLineComment() {
-    std::size_t comments = 1;
+    comments = 1;
     while (comments != 0 && !isAtEnd()) {
         if (peek() == '*' && peekNext() == ')') comments--;
         if (peek() == '(' && peekNext() == '*') comments++;
@@ -172,5 +174,6 @@ bool Lexer::tryToSkipMultiLineComment() {
     if (isAtEnd()) {
         return false;
     }
+    advance(); // skip last ')'
     return true;
 }

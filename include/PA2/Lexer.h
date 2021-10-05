@@ -26,4 +26,5 @@ private:
     std::string program;
     std::size_t lineNumber = 1;
     std::size_t offset = 0;
+    std::size_t comments = 0;
 };
