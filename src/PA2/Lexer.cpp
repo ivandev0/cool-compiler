@@ -70,7 +70,7 @@ Token Lexer::next() {
                 } else if (isAlpha(c)) {
                     return identifier();
                 } else {
-                    return {Token::Kind::ERROR, std::string(1, c), lineNumber};
+                    return {Token::Kind::ERROR, charToStringRepresentation(c), lineNumber};
                 }
         }
     }
@@ -106,13 +106,41 @@ bool Lexer::isAtEnd() {
 }
 
 Token Lexer::string() {
-    // TODO drop '/' symbol
-    auto begin = offset;
-    while (peek() != '"' && !isAtEnd()) advance();
+    std::size_t size = 0;
+    std::stringstream result;
+    result << '"';
+    char c;
+    while ((c = peek()) != '"' && !isAtEnd()) {
+        if (c == '\\') {
+            auto next = peekNext();
+            if (next == 'b' || next == 't' || next == 'n' || next == 'f' || next == '\\' || next == '"' || next == '\n') {
+                next == '\n' ? result << "\\n" : result << '\\' << next;
+                size++;
+                advance();
+            }
+            if (next == '\0') {
+                advance();
+                return {Token::Kind::ERROR, "String contains escaped null character.", lineNumber};
+            }
+        } else if (c == '\n') {
+            advance();
+            return {Token::Kind::ERROR, "Unterminated string constant", lineNumber};
+        } else if (c == '\0') {
+            while (peek() != '"' && peek() != '\n' && !isAtEnd()) advance();
+            if (peek() == '"') advance();
+            return {Token::Kind::ERROR, "String contains null character.", lineNumber};
+        } else {
+            result << charToStringRepresentation(c);
+            size++;
+        }
+        advance();
+    }
     if (isAtEnd()) return {Token::Kind::ERROR, "EOF in string constant", lineNumber};
 
     advance(); // skip enclosing '"'
-    return {Token::Kind::STR_CONST, program.substr(begin - 1, offset - begin + 1), lineNumber};
+    result << '"';
+    if (size > MAX_STR_LENGTH) return {Token::Kind::ERROR, "String constant too long", lineNumber};
+    return {Token::Kind::STR_CONST, result.str(), lineNumber};
 }
 
 Token Lexer::number() {
@@ -129,7 +157,7 @@ Token Lexer::identifier() {
     // BOOL_CONST | OBJECTID | TYPEID | keyword
     Token::Kind type = getKeywordType(text);
     if (type == Token::Kind::BOOL_CONST) {
-        return {islower(text[0]) ? Token::Kind::BOOL_CONST : Token::Kind::OBJECTID, islower(text[0]) ? toLowerCase(text) : text, lineNumber};
+        return {islower(text[0]) ? Token::Kind::BOOL_CONST : Token::Kind::TYPEID, islower(text[0]) ? toLowerCase(text) : text, lineNumber};
     } else if (type != Token::Kind::ERROR) {
         return {type, lineNumber};
     }
@@ -156,12 +184,7 @@ Token::Kind Lexer::getKeywordType(const std::string& str) {
     if (lowercaseStr == "new") return Token::Kind::NEW;
     if (lowercaseStr == "isvoid") return Token::Kind::ISVOID;
     if (lowercaseStr == "not") return Token::Kind::NOT;
-
-    if (lowercaseStr == "true" || lowercaseStr == "false") {
-        if (islower(str[0])) {
-            return Token::Kind::BOOL_CONST;
-        }
-    }
+    if (lowercaseStr == "true" || lowercaseStr == "false") return Token::Kind::BOOL_CONST;
     return Token::Kind::ERROR;
 }
 
