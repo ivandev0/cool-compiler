@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16)
 
 set(LEXER_HEADER_FILES
         ${cool_compiler_SOURCE_DIR}/include/PA2/Lexer.h
