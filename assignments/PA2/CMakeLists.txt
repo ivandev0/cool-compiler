@@ -18,5 +18,5 @@ target_include_directories(lexer_test PRIVATE ${cool_compiler_SOURCE_DIR}/includ
 
 foreach(filename ${tests})
     get_filename_component(name ${filename} NAME_WE)
-    add_test("test_${name}" lexer_test ${filename})
+    add_test("test_${name}" lexer_test ${cool_compiler_SOURCE_DIR}/bin/lexer ${filename})
 endforeach()

@@ -38,6 +38,8 @@ std::string Token::toString() {
         return "#" + std::to_string(line) + " '" + lexeme + "'";
     } else if (kind == Kind::ERROR) {
         return "#" + std::to_string(line) + " " + asString(kind) + " \"" + lexeme + "\"";
+    } else if (lexeme.empty()) {
+        return "#" + std::to_string(line) + " " + asString(kind);
     } else {
         return "#" + std::to_string(line) + " " + asString(kind) + " " + lexeme;
     }

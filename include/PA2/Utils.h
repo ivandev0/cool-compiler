@@ -8,7 +8,11 @@ bool isDigit(char c) {
 }
 
 bool isAlpha(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+bool isAlphaOdDigitOrUnderscore(char c) {
+    return isAlpha(c) || isDigit(c) || c == '_';
 }
 
 bool isWhitespace(char c) {

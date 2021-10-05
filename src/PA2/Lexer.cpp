@@ -37,6 +37,7 @@ Token Lexer::next() {
             case '-':
             case '/':
             case '.':
+            case ',':
             case '@':
             case '~':
                 return {std::string(1, c), lineNumber};
@@ -111,7 +112,7 @@ Token Lexer::string() {
     if (isAtEnd()) return {Token::Kind::ERROR, "EOF in string constant", lineNumber};
 
     advance(); // skip enclosing '"'
-    return {Token::Kind::STR_CONST, program.substr(begin, (offset - 1) - begin), lineNumber};
+    return {Token::Kind::STR_CONST, program.substr(begin - 1, offset - begin + 1), lineNumber};
 }
 
 Token Lexer::number() {
@@ -122,7 +123,7 @@ Token Lexer::number() {
 
 Token Lexer::identifier() {
     auto begin = offset - 1;
-    while ((isAlpha(peek()) || isDigit(peek())) && !isAtEnd()) advance();
+    while (isAlphaOdDigitOrUnderscore(peek()) && !isAtEnd()) advance();
 
     auto text = program.substr(begin, offset - begin);
     // BOOL_CONST | OBJECTID | TYPEID | keyword
