@@ -35,7 +35,10 @@ std::string asString(Token::Kind kind) {
 
 std::string Token::toString() {
     if (kind == Kind::ATOM) {
-        return "#" + std::to_string(line) + " " + lexeme;
+        return "#" + std::to_string(line) + " '" + lexeme + "'";
+    } else if (kind == Kind::ERROR) {
+        return "#" + std::to_string(line) + " " + asString(kind) + " \"" + lexeme + "\"";
+    } else {
+        return "#" + std::to_string(line) + " " + asString(kind) + " " + lexeme;
     }
-    return "#" + std::to_string(line) + " " + asString(kind) + " " + lexeme;
 }

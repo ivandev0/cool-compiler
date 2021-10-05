@@ -2,6 +2,8 @@
 #include <string>
 #include <utility>
 #include <stdexcept>
+#include <map>
+#include <regex>
 
 class Token {
 public:
@@ -31,9 +33,9 @@ public:
         ASSIGN,
         NOT,
         LE,
+        LET_STMT, // TODO check that is this
         ERROR,
-        LET_STMT,
-        ATOM
+        ATOM // used for single atom symbol
     };
 
     Token(Kind kind, std::size_t line) : kind(kind), lexeme(""), line(line) {}
