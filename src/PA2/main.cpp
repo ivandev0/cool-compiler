@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         buffer << file.rdbuf();
         file.close();
 
-        auto lexer = Lexer(buffer.str());
+        auto lexer = lexer::Lexer(buffer.str());
         cout << "#name " << std::filesystem::path(fileName).filename() << endl;
         while (lexer.hasNext()) {
             cout << lexer.next().toString() << endl;

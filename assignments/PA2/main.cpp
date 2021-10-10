@@ -6,14 +6,14 @@
 using namespace std;
 
 std::stringstream getExpected(const std::string& lexerPath, const std::string& fileName) {
-    std::system((lexerPath + " " + fileName + " > actual.txt").c_str());
-    ifstream actualFile("actual.txt");
-    stringstream actualResult;
-    actualResult << actualFile.rdbuf();
-    actualFile.close();
-    std::remove("actual.txt");
+    std::system((lexerPath + " " + fileName + " > expected.txt").c_str());
+    ifstream expectedFile("expected.txt");
+    stringstream expectedResult;
+    expectedResult << expectedFile.rdbuf();
+    expectedFile.close();
+    std::remove("expected.txt");
 
-    return actualResult;
+    return expectedResult;
 }
 
 std::stringstream getActual(const std::string& fileName) {
@@ -26,13 +26,13 @@ std::stringstream getActual(const std::string& fileName) {
     buffer << file.rdbuf();
     file.close();
 
-    stringstream expectedResult;
-    auto lexer = Lexer(buffer.str());
-    expectedResult << "#name \"" << fileName << "\"" << endl;
+    stringstream actualResult;
+    auto lexer = lexer::Lexer(buffer.str());
+    actualResult << "#name \"" << fileName << "\"" << endl;
     while (lexer.hasNext()) {
-        expectedResult << lexer.next().toString() << endl;
+        actualResult << lexer.next().toString() << endl;
     }
-    return expectedResult;
+    return actualResult;
 }
 
 int main(int argc, char** argv) {

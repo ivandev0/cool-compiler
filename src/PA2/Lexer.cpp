@@ -1,7 +1,7 @@
 #include "Lexer.h"
 #include "Utils.h"
 
-bool Lexer::hasNext() {
+bool lexer::Lexer::hasNext() {
     if (isAtEnd()) return false;
     while (!isAtEnd()) {
         if (peek() == '-' && peekNext() == '-') {
@@ -18,7 +18,7 @@ bool Lexer::hasNext() {
     return !isAtEnd();
 }
 
-Token Lexer::next() {
+Token lexer::Lexer::next() {
     if (isAtEnd() && comments != 0) {
         return {Token::Kind::ERROR, "EOF in comment", lineNumber};
     }
@@ -78,22 +78,22 @@ Token Lexer::next() {
     throw std::runtime_error("There are no tokens left");
 }
 
-char Lexer::advance() {
+char lexer::Lexer::advance() {
     if (program.at(offset) == '\n') lineNumber++;
     return program.at(offset++);
 }
 
-char Lexer::peek() {
+char lexer::Lexer::peek() {
     if (isAtEnd()) return '\0';
     return program.at(offset);
 }
 
-char Lexer::peekNext() {
+char lexer::Lexer::peekNext() {
     if (offset + 1 >= program.length()) return '\0';
     return program.at(offset + 1);
 }
 
-bool Lexer::match(char expected) {
+bool lexer::Lexer::match(char expected) {
     if (isAtEnd()) return false;
     if (program.at(offset) != expected) return false;
 
@@ -101,11 +101,11 @@ bool Lexer::match(char expected) {
     return true;
 }
 
-bool Lexer::isAtEnd() {
+bool lexer::Lexer::isAtEnd() {
     return offset >= program.length();
 }
 
-Token Lexer::string() {
+Token lexer::Lexer::string() {
     std::size_t size = 0;
     std::stringstream result;
     result << '"';
@@ -143,13 +143,13 @@ Token Lexer::string() {
     return {Token::Kind::STR_CONST, result.str(), lineNumber};
 }
 
-Token Lexer::number() {
+Token lexer::Lexer::number() {
     auto begin = offset - 1;
     while (isDigit(peek()) && !isAtEnd()) advance();
     return {Token::Kind::INT_CONST, program.substr(begin, offset - begin), lineNumber};
 }
 
-Token Lexer::identifier() {
+Token lexer::Lexer::identifier() {
     auto begin = offset - 1;
     while (isAlphaOdDigitOrUnderscore(peek()) && !isAtEnd()) advance();
 
@@ -165,7 +165,7 @@ Token Lexer::identifier() {
     return {islower(text[0]) ? Token::Kind::OBJECTID : Token::Kind::TYPEID, text, lineNumber};
 }
 
-Token::Kind Lexer::getKeywordType(const std::string& str) {
+Token::Kind lexer::Lexer::getKeywordType(const std::string& str) {
     auto lowercaseStr = toLowerCase(str);
     if (lowercaseStr == "class") return Token::Kind::CLASS;
     if (lowercaseStr == "else") return Token::Kind::ELSE;
@@ -188,7 +188,7 @@ Token::Kind Lexer::getKeywordType(const std::string& str) {
     return Token::Kind::ERROR;
 }
 
-bool Lexer::tryToSkipMultiLineComment() {
+bool lexer::Lexer::tryToSkipMultiLineComment() {
     comments = 1;
     while (comments != 0 && !isAtEnd()) {
         if (peek() == '*' && peekNext() == ')') comments--;
