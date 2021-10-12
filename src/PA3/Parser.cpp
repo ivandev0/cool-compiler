@@ -55,9 +55,9 @@ namespace parser {
         matchNext(":");
         checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
-        auto expr = std::make_shared<Expression>(matchNextKind(Token::ASSIGN, false) ? parseExpression() : createNoExpr());
+        auto expr = matchNextKind(Token::ASSIGN, false) ? parseExpression() : createNoExpr();
 
-        return AttrFeature{{line}, id, type, expr};
+        return AttrFeature{{line}, id, type, std::make_shared<Expression>(expr)};
     }
 
     MethodFeature Parser::parseMethodFeature() {
@@ -77,10 +77,10 @@ namespace parser {
         auto type = getNext().lexeme;
 
         matchNext("{");
-        auto expr = std::make_shared<Expression>(parseExpression());
+        auto expr = parseExpression();
         matchNext("}");
 
-        return MethodFeature{{line}, id, formals, type, expr};
+        return MethodFeature{{line}, id, formals, type, std::make_shared<Expression>(expr)};
     }
 
     Formal Parser::parseFormal() {
@@ -131,9 +131,10 @@ namespace parser {
     Expression Parser::parseExpression() {
         std::size_t line = iterator->line;
         if (peek().kind == Token::OBJECTID && peekNext().kind == Token::ASSIGN) {
-            auto id = std::make_shared<IdExpression>(parseIdExpression());
+            auto id = parseIdExpression();
             iterator++; //skip assign
-            return Expression{{line}, AssignExpression{{line}, id, std::make_shared<Expression>(parseExpression())}};
+            auto expr = parseExpression();
+            return Expression{{line}, AssignExpression{{line}, std::make_shared<IdExpression>(id), std::make_shared<Expression>(expr)}};
         }
         return parseNotExpression();
     }
@@ -154,13 +155,22 @@ namespace parser {
         auto next = peek();
         if (next.kind == Token::LE || next.lexeme == "<" || next.lexeme == "=") {
             iterator++;
-            auto next_term = std::make_shared<Expression>(parsePlusSubExpression());
+            auto next_term = parsePlusSubExpression();
             if (next.kind == Token::LE) {
-                term = Expression{{line}, LessOrEqualExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
+                term = Expression{
+                    {line},
+                    LessOrEqualExpression{{line}, std::make_shared<Expression>(std::move(term)), std::make_shared<Expression>(next_term)}
+                };
             } else if (next.lexeme == "<") {
-                term = Expression{{line}, LessExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
+                term = Expression{
+                    {line},
+                    LessExpression{{line}, std::make_shared<Expression>(std::move(term)), std::make_shared<Expression>(next_term)}
+                };
             } else {
-                term = Expression{{line}, EqualExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
+                term = Expression{
+                    {line},
+                    EqualExpression{{line}, std::make_shared<Expression>(std::move(term)), std::make_shared<Expression>(next_term)}
+                };
             }
         }
 
@@ -174,11 +184,17 @@ namespace parser {
         auto next = peek();
         while (next.lexeme == "+" || next.lexeme == "-") {
             iterator++;
-            auto next_term = std::make_shared<Expression>(parseMulDivExpression());
+            auto next_term = parseMulDivExpression();
             if (next.lexeme == "+") {
-                term = Expression{{line}, PlusExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
+                term = Expression{
+                    {line},
+                    PlusExpression{{line}, std::make_shared<Expression>(std::move(term)), std::make_shared<Expression>(next_term)}
+                };
             } else {
-                term = Expression{{line}, MinusExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
+                term = Expression{
+                    {line},
+                    MinusExpression{{line}, std::make_shared<Expression>(std::move(term)), std::make_shared<Expression>(next_term)}
+                };
             }
             next = peek();
             line = iterator->line;
@@ -194,11 +210,17 @@ namespace parser {
         auto next = peek();
         while (next.lexeme == "*" || next.lexeme == "/") {
             iterator++;
-            auto next_term = std::make_shared<Expression>(parseIsVoidExpression());
+            auto next_term = parseIsVoidExpression();
             if (next.lexeme == "*") {
-                term = Expression{{line}, MulExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
+                term = Expression{
+                    {line},
+                    MulExpression{{line}, std::make_shared<Expression>(std::move(term)), std::make_shared<Expression>(next_term)}
+                };
             } else {
-                term = Expression{{line}, DivExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
+                term = Expression{
+                    {line},
+                    DivExpression{{line}, std::make_shared<Expression>(std::move(term)), std::make_shared<Expression>(next_term)}
+                };
             }
             next = peek();
             line = iterator->line;
@@ -239,7 +261,7 @@ namespace parser {
 
             matchNext(".");
             checkNextKind(Token::OBJECTID);
-            auto id = std::make_shared<IdExpression>(parseIdExpression());
+            auto id = parseIdExpression();
 
             matchNext("(");
             std::vector<std::shared_ptr<Expression>> args;
@@ -250,9 +272,15 @@ namespace parser {
             matchNext(")");
 
             if (type.empty()) {
-                term = Expression{{line}, DispatchExpression{{line}, std::make_shared<Expression>(term), id, args}};
+                term = Expression{
+                    {line},
+                    DispatchExpression{{line}, std::make_shared<Expression>(term), std::make_shared<IdExpression>(id), args}
+                };
             } else {
-                term = Expression{{line}, StaticDispatchExpression{{line}, std::make_shared<Expression>(term), type, id, args}};
+                term = Expression{
+                    {line},
+                    StaticDispatchExpression{{line}, std::make_shared<Expression>(term), type, std::make_shared<IdExpression>(id), args}
+                };
             }
             next = peek();
         }
@@ -279,7 +307,7 @@ namespace parser {
         return Expression{
                 {line},
                 DispatchExpression{
-                        {line}, std::make_shared<Expression>(expr), std::make_shared<IdExpression>(id), args
+                    {line}, std::make_shared<Expression>(expr), std::make_shared<IdExpression>(id), args
                 }
         };
     }
@@ -320,32 +348,37 @@ namespace parser {
     AssignExpression Parser::parseAssignExpression() {
         std::size_t line = iterator->line;
         checkNextKind(Token::OBJECTID);
-        auto id = std::make_shared<IdExpression>(parseIdExpression());
+        auto id = parseIdExpression();
         matchNextKind(Token::ASSIGN);
-        auto expr = std::make_shared<Expression>(parseExpression());
-        return AssignExpression{{line}, id, expr};
+        auto expr = parseExpression();
+        return AssignExpression{{line}, std::make_shared<IdExpression>(id), std::make_shared<Expression>(expr)};
     }
 
     IfExpression Parser::parseIfExpression() {
         std::size_t line = iterator->line;
         matchNextKind(Token::IF);
-        auto condition = std::make_shared<Expression>(parseExpression());
+        auto condition = parseExpression();
         matchNextKind(Token::THEN);
-        auto trueBranch = std::make_shared<Expression>(parseExpression());
+        auto trueBranch = parseExpression();
         matchNextKind(Token::ELSE);
-        auto falseBranch = std::make_shared<Expression>(parseExpression());
+        auto falseBranch = parseExpression();
         matchNextKind(Token::FI);
-        return IfExpression{{line}, condition, trueBranch, falseBranch};
+        return IfExpression{
+            {line},
+            std::make_shared<Expression>(condition),
+            std::make_shared<Expression>(trueBranch),
+            std::make_shared<Expression>(falseBranch)
+        };
     }
 
     WhileExpression Parser::parseWhileExpression() {
         std::size_t line = iterator->line;
         matchNextKind(Token::WHILE);
-        auto condition = std::make_shared<Expression>(parseExpression());
+        auto condition = parseExpression();
         matchNextKind(Token::LOOP);
-        auto body = std::make_shared<Expression>(parseExpression());
+        auto body = parseExpression();
         matchNextKind(Token::POOL);
-        return WhileExpression{{line}, condition, body};
+        return WhileExpression{{line}, std::make_shared<Expression>(condition), std::make_shared<Expression>(body)};
     }
 
     BlockExpression Parser::parseBlockExpression() {
@@ -370,7 +403,7 @@ namespace parser {
     CaseExpression Parser::parseCaseExpression() {
         std::size_t line = iterator->line;
         matchNextKind(Token::CASE);
-        auto condition = std::make_shared<Expression>(parseExpression());
+        auto condition = parseExpression();
         matchNextKind(Token::OF);
 
         std::vector<CaseBranchExpression> branches;
@@ -378,7 +411,7 @@ namespace parser {
             branches.push_back(parseCaseBranchExpression());
         }
         matchNextKind(Token::ESAC);
-        return CaseExpression{{line}, condition, branches};
+        return CaseExpression{{line}, std::make_shared<Expression>(condition), branches};
     }
 
     NewExpression Parser::parseNewExpression() {
@@ -392,9 +425,9 @@ namespace parser {
     InBracketsExpression Parser::parseInBracketsExpression() {
         std::size_t line = iterator->line;
         matchNext("(");
-        auto expr = std::make_shared<Expression>(parseExpression());
+        auto expr = parseExpression();
         matchNext(")");
-        return InBracketsExpression{{line}, expr};
+        return InBracketsExpression{{line}, std::make_shared<Expression>(expr)};
     }
 
     IntExpression Parser::parseIntExpression() {
@@ -416,34 +449,39 @@ namespace parser {
 
     IdExpression Parser::parseIdExpression() {
         std::size_t line = iterator->line;
+        checkNextKind(Token::OBJECTID);
         return IdExpression{{line}, getNext().lexeme};
     }
 
     LetExpression Parser::parseInnerLetExpression() {
         std::size_t line = iterator->line;
         checkNextKind(Token::OBJECTID);
-        auto id = std::make_shared<IdExpression>(parseIdExpression());
+        auto id = parseIdExpression();
         matchNext(":");
         checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
-        auto expr = std::make_shared<Expression>(matchNextKind(Token::ASSIGN, false) ? parseExpression() : createNoExpr());
+        auto expr = matchNextKind(Token::ASSIGN, false) ? parseExpression() : createNoExpr();
         if (peek().kind != Token::IN) matchNext(",");
+        auto body = matchNextKind(Token::IN, false) ? parseExpression() : Expression{{line}, parseInnerLetExpression()};
         return LetExpression{
-            {line}, id, type, expr,
-            std::make_shared<Expression>(matchNextKind(Token::IN, false) ? parseExpression() : Expression{{line}, parseInnerLetExpression()})
+            {line},
+            std::make_shared<IdExpression>(id),
+            type,
+            std::make_shared<Expression>(expr),
+            std::make_shared<Expression>(body)
         };
     }
 
     CaseBranchExpression Parser::parseCaseBranchExpression() {
         std::size_t line = iterator->line;
         checkNextKind(Token::OBJECTID);
-        auto id = std::make_shared<IdExpression>(parseIdExpression());
+        auto id = parseIdExpression();
         matchNext(":");
         checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
         matchNextKind(Token::DARROW);
-        auto expr = std::make_shared<Expression>(parseExpression());
+        auto expr = parseExpression();
         matchNext(";");
-        return CaseBranchExpression{{line}, id, type, expr};
+        return CaseBranchExpression{{line}, std::make_shared<IdExpression>(id), type, std::make_shared<Expression>(expr)};
     }
 }
