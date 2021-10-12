@@ -4,6 +4,7 @@
 
 #include "Lexer.h"
 #include "Parser.h"
+#include "PrintVisitor.h"
 
 using namespace std;
 
@@ -26,7 +27,10 @@ int main(int argc, char **argv) {
         while (lexer.hasNext()) {
             tokens.push_back(lexer.next());
         }
-        cout << parser::Parser(tokens).parseProgram().toString() << endl;
+        parser::Program program = parser::Parser(tokens, fileName).parseProgram();
+        auto printer = parser::PrintVisitor();
+        printer.visitProgram(program);
+        cout << printer.getResult() << endl;
     } else {
         cerr << "File " << fileName << " wasn't found" << endl;
         return 1;

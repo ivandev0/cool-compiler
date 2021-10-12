@@ -4,6 +4,7 @@
 #include "Token.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "PrintVisitor.h"
 
 using namespace std;
 
@@ -35,7 +36,10 @@ std::stringstream getActual(const std::string& fileName) {
     }
 
     stringstream actualResult;
-    actualResult << parser::Parser(tokens).parseProgram().toString();
+    parser::Program program = parser::Parser(tokens, fileName).parseProgram();
+    auto printer = parser::PrintVisitor();
+    printer.visitProgram(program);
+    actualResult << printer.getResult() << endl;
     return actualResult;
 }
 

@@ -45,7 +45,8 @@ public:
     Token(Kind kind, std::string lexeme, std::size_t line) : kind(kind), lexeme(std::move(lexeme)), line(line) {}
 
     std::string toString();
-private:
+
+public:
     Kind kind;
     std::string lexeme;
     std::size_t line;
