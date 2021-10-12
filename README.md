@@ -11,3 +11,7 @@ cmake -DCMAKE_BUILD_TYPE=UBSAN --build cmake-build-debug_ubsan/ # с undefined b
 cd cmake-build-debug_(asan|ubsan)/
 ctest
 ```
+
+## Parser
+
+Сборка и запуск аналогична лексеру.
