@@ -13,7 +13,7 @@ set(PARSER_CPP_FILES
         ${cool_compiler_SOURCE_DIR}/src/PA3/Parser.cpp
 )
 
-file(GLOB tests "tests/*.cool")
+file(GLOB tests "tests/*.test")
 
 add_executable(parser_test ${PARSER_CPP_FILES})
 target_include_directories(parser_test PRIVATE ${PARSER_HEADER_FILES})
