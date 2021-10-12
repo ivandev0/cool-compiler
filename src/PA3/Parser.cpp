@@ -99,7 +99,7 @@ namespace parser {
 //  not_expr ::= not not_expr
 //      | comp_expr
 //
-//  comp_expr ::= plus_sub_expr ( ( "<=" | "<" | "=") plus_sub_expr )*
+//  comp_expr ::= plus_sub_expr ( "<=" | "<" | "=") plus_sub_expr
 //  plus_sub_expr ::= mul_div_expr ( ( "+" | "-") mul_div_expr )*
 //  mul_div_expr ::= isvoid_expr ( ( "*" | "/") isvoid_expr )*
 //
@@ -152,7 +152,7 @@ namespace parser {
         auto term = parsePlusSubExpression();
 
         auto next = peek();
-        while (next.kind == Token::LE || next.lexeme == "<" || next.lexeme == "=") {
+        if (next.kind == Token::LE || next.lexeme == "<" || next.lexeme == "=") {
             iterator++;
             auto next_term = std::make_shared<Expression>(parsePlusSubExpression());
             if (next.kind == Token::LE) {
@@ -162,8 +162,6 @@ namespace parser {
             } else {
                 term = Expression{{line}, EqualExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             }
-            next = peek();
-            line = iterator->line;
         }
 
         return term;
