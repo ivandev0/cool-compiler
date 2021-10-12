@@ -34,7 +34,7 @@ namespace parser {
         BoolExpression parseBoolExpression();
         IdExpression parseIdExpression();
 
-        LetStatementExpression parseLetStatementExpression();
+        LetExpression parseInnerLetExpression();
         CaseBranchExpression parseCaseBranchExpression();
 
         Expression parseNotExpression();
@@ -47,61 +47,53 @@ namespace parser {
         Expression parseDispatchExpression();
         Expression parseAtomExpression();
 
-
-
-
-//        StaticDispatchExpression parseStaticDispatchExpression();
-//        DispatchExpression parseDispatchExpression();
-//        IsVoidExpression parseIsVoidExpression();
-//        PlusExpression parsePlusExpression();
-//        MinusExpression parseMinusExpression();
-//        MulExpression parseMulExpression();
-//        DivExpression parseDivExpression();
-//        InverseExpression parseInverseExpression();
-//        LessExpression parseLessExpression();
-//        LessOrEqualExpression parseLessOrEqualExpression();
-//        EqualExpression parseEqualExpression();
-//        NotExpression parseNotExpression();
-
     private:
         bool hasNext() { return iterator != end; }
         Token getNext() { return *(iterator++); }
 
-        Token peek() { return *iterator; }
-        Token peekNext() { return *(iterator + 1); /* TODO throw error if distance > 1 */ }
+        Token peek() {
+            if (hasNext()) return *iterator;
+            return {"EOF", 0};
+        }
+        Token peekNext() {
+            if (!hasNext() || (iterator + 1) == end) return {"EOF", 0};
+            return *(iterator + 1);
+        }
 
-        bool checkNext(const std::string &symbol, const std::string &message) {
+        void throwError() {
+            auto tokenStr = !hasNext() ? "EOF" : iterator->toStringForParser();
+            auto line = !hasNext() ? "0" : std::to_string(iterator->line);
+            auto message = "\"" + filename + "\", line " + line + ": syntax error at or near " + tokenStr;
+            throw std::runtime_error(message);
+        }
+
+        bool checkNext(const std::string &symbol, bool withError = true) {
             if (peek().lexeme == symbol) return true;
-            if (!message.empty()) throw std::runtime_error(message);
+            if (withError) throwError();
             return false;
         }
 
-        bool checkNextKind(const Token::Kind &kind, const std::string &message) {
+        bool checkNextKind(const Token::Kind &kind, bool withError = true) {
             if (peek().kind == kind) return true;
-            if (!message.empty()) throw std::runtime_error(message);
+            if (withError) throwError();
             return false;
         }
 
-        bool matchNext(const std::string &symbol, const std::string &message) {
-            if (!checkNext(symbol, message)) return false;
+        bool matchNext(const std::string &symbol, bool withError = true) {
+            if (!checkNext(symbol, withError)) return false;
             getNext();
             return true;
         }
 
-        bool matchNext(const std::string &symbol) {
-            return matchNext(symbol, "");
-        }
-
-        bool matchNextKind(const Token::Kind &kind, const std::string &message) {
-            if (!checkNextKind(kind, message)) return false;
+        bool matchNextKind(const Token::Kind &kind, bool withError = true) {
+            if (!checkNextKind(kind, withError)) return false;
             getNext();
             return true;
         }
 
-        bool matchNextKind(const Token::Kind &kind) {
-            return matchNextKind(kind, "");
+        static Expression createNoExpr() {
+            return {{0}, NoExprExpression{}};
         }
-
 
     private:
         std::vector<Token>::const_iterator iterator;

@@ -41,6 +41,7 @@ namespace parser {
             if (auto data = std::get_if<StringExpression>(&(expr.data))) return visitStringExpression(*data);
             if (auto data = std::get_if<BoolExpression>(&(expr.data))) return visitBoolExpression(*data);
             if (auto data = std::get_if<IdExpression>(&(expr.data))) return visitIdExpression(*data);
+            if (auto data = std::get_if<NoExprExpression>(&(expr.data))) return visitNoExprExpression(*data);
 
             throw std::runtime_error("Unsupported expression type");
         }
@@ -73,8 +74,8 @@ namespace parser {
         virtual R visitStringExpression(StringExpression &expr) = 0;
         virtual R visitBoolExpression(BoolExpression &expr) = 0;
         virtual R visitIdExpression(IdExpression &expr) = 0;
+        virtual R visitNoExprExpression(NoExprExpression &expr) = 0;
 
-        virtual R visitLetStatementExpression(LetStatementExpression &expr) = 0;
         virtual R visitCaseBranchExpression(CaseBranchExpression &expr) = 0;
     };
 }

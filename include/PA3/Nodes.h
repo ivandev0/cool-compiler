@@ -7,7 +7,7 @@
 
 namespace parser {
     struct TreeNode {
-        std::size_t lineNumber;
+        std::size_t lineNumber = 0;
         std::string resultType = "_no_type";
     };
 
@@ -89,14 +89,10 @@ namespace parser {
         std::vector<std::shared_ptr<Expression>> list;
     };
 
-    struct LetStatementExpression : TreeNode {
+    struct LetExpression : TreeNode {
         std::shared_ptr<IdExpression> id;
         std::string type;
         std::shared_ptr<Expression> expr;
-    };
-
-    struct LetExpression : TreeNode {
-        std::vector<LetStatementExpression> statements;
         std::shared_ptr<Expression> body;
     };
 
@@ -178,13 +174,17 @@ namespace parser {
         bool value;
     };
 
+    struct NoExprExpression : TreeNode {
+        std::string value = "_no_expr";
+    };
+
     struct Expression : TreeNode {
         std::variant<
                 AssignExpression, StaticDispatchExpression, DispatchExpression, IfExpression,
                 WhileExpression, BlockExpression, LetExpression, CaseExpression, NewExpression, IsVoidExpression,
                 PlusExpression, MinusExpression, MulExpression, DivExpression, InverseExpression,
                 LessExpression, LessOrEqualExpression, EqualExpression, NotExpression, InBracketsExpression,
-                IdExpression, IntExpression, StringExpression, BoolExpression
+                IdExpression, IntExpression, StringExpression, BoolExpression, NoExprExpression
         > data;
     };
 }

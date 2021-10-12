@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <iomanip>
 #include "ASTVisitor.h"
 
 namespace parser {
@@ -25,7 +26,7 @@ namespace parser {
 
         void printLine(const TreeNode &node) {
             auto lineNumber = std::to_string(node.lineNumber);
-            stream << std::setw(static_cast<int>(offset + lineNumber.length())) << "#" << lineNumber << std::endl;
+            stream << std::setw(static_cast<int>(offset + 1)) << "#" << lineNumber << std::endl;
         }
 
         void printStr(const std::string &name) {
@@ -33,7 +34,7 @@ namespace parser {
         }
 
         void printType(const TreeNode &node) {
-            stream << ":" << std::setw(static_cast<int>(offset + node.resultType.length())) << node.resultType << std::endl;
+            stream << std::setw(static_cast<int>(offset + 2)) << ": " << node.resultType << std::endl;
         }
 
         // TODO these methods can be in handy if we introduce new type - Symbol
@@ -45,23 +46,23 @@ namespace parser {
         void visitClass(Class &klass) override {
             printLine(klass);
             printStr("_class");
+            increaseOffset();
             printSymbol(klass.type);
             printSymbol(klass.parent);
             printStr("\"" + klass.filename + "\"");
             printStr("(");
-            increaseOffset();
             for (auto feature: klass.features) {
                 visitFeature(feature);
             }
-            decreaseOffset();
             printStr(")");
+            decreaseOffset();
         }
 
         void visitAttrFeature(AttrFeature &attrFeature) override {
             printLine(attrFeature);
             printStr("_attr");
             increaseOffset();
-            visitIdExpression(attrFeature.id);
+            printStr(attrFeature.id.id);    // must be `printStr` to match original parser
             printSymbol(attrFeature.type);
             visitExpression(*attrFeature.expr);
             decreaseOffset();
@@ -71,7 +72,7 @@ namespace parser {
             printLine(methodFeature);
             printStr("_method");
             increaseOffset();
-            visitIdExpression(methodFeature.id);
+            printStr(methodFeature.id.id);    // must be `printStr` to match original parser
             for (auto param: methodFeature.params) {
                 visitFormal(param);
             }
@@ -84,7 +85,7 @@ namespace parser {
             printLine(formal);
             printStr("_formal");
             increaseOffset();
-            visitIdExpression(formal.id);
+            printStr(formal.id.id);    // must be `printStr` to match original parser
             printSymbol(formal.type);
             decreaseOffset();
         }
@@ -93,7 +94,7 @@ namespace parser {
             printLine(expr);
             printStr("_assign");
             increaseOffset();
-            visitIdExpression(*expr.id);
+            printStr((*expr.id).id);    // must be `printStr` to match original parser
             visitExpression(*expr.expr);
             decreaseOffset();
             printType(expr);
@@ -105,7 +106,7 @@ namespace parser {
             increaseOffset();
             visitExpression(*expr.expr);
             printSymbol(expr.type);
-            visitIdExpression(*expr.id);
+            printStr((*expr.id).id);    // must be `printStr` to match original parser
             printStr("(");
             for (const auto& arg: expr.list) {
                 visitExpression(*arg);
@@ -120,7 +121,7 @@ namespace parser {
             printStr("_dispatch");
             increaseOffset();
             visitExpression(*expr.expr);
-            visitIdExpression(*expr.id);
+            printStr((*expr.id).id);    // must be `printStr` to match original parser
             printStr("(");
             for (const auto& arg: expr.list) {
                 visitExpression(*arg);
@@ -154,27 +155,29 @@ namespace parser {
         void visitBlockExpression(BlockExpression &expr) override {
             printLine(expr);
             printStr("_block");
+            increaseOffset();
             for (const auto& exprInBlock: expr.list) {
                 visitExpression(*exprInBlock);
             }
+            decreaseOffset();
             printType(expr);
         }
 
         void visitLetExpression(LetExpression &expr) override {
-            for (auto letStmt: expr.statements) {
-                visitLetStatementExpression(letStmt);
-            }
+            printLine(expr);
+            printStr("_let");
+            increaseOffset();
+            printStr((*expr.id).id);    // must be `printStr` to match original parser
+            printSymbol(expr.type);
+            visitExpression(*expr.expr);
             visitExpression(*expr.body);
-            for (auto letStmt: expr.statements) {
-                decreaseOffset();
-            }
-
+            decreaseOffset();
             printType(expr);
         }
 
         void visitCaseExpression(CaseExpression &expr) override {
             printLine(expr);
-            printStr("_typecase");
+            printStr("_typcase");
             increaseOffset();
             visitExpression(*expr.expr);
             for (auto branch: expr.branches) {
@@ -271,7 +274,7 @@ namespace parser {
             printLine(expr);
             printStr("_string");
             increaseOffset();
-            printStr("\"" + expr.value + "\"");
+            printStr(expr.value);
             decreaseOffset();
             printType(expr);
         }
@@ -286,26 +289,30 @@ namespace parser {
         }
 
         void visitIdExpression(IdExpression &expr) override {
-            stream << std::setw(static_cast<int>(offset + expr.id.length())) << expr.id << std::endl;
-        }
-
-        void visitLetStatementExpression(LetStatementExpression &expr) override {
             printLine(expr);
-            printStr("_let");
+            printStr("_object");
             increaseOffset();
-            visitIdExpression(*expr.id);
-            printSymbol(expr.type);
-            visitExpression(*expr.expr);
+            stream << std::setw(static_cast<int>(offset + expr.id.length())) << expr.id << std::endl;
+            decreaseOffset();
             printType(expr);
         }
+
+        void visitNoExprExpression(NoExprExpression &expr) override {
+            printLine(expr);
+            stream << std::setw(static_cast<int>(offset + expr.value.length())) << expr.value << std::endl;
+            printType(expr);
+        }
+
+    private:
 
         void visitCaseBranchExpression(CaseBranchExpression &expr) override {
             printLine(expr);
             printStr("_branch");
-            visitIdExpression(*expr.id);
+            increaseOffset();
+            printStr((*expr.id).id);    // must be `printStr` to match original parser
             printSymbol(expr.type);
             visitExpression(*expr.expr);
-            printType(expr);
+            decreaseOffset();
         }
 
     private:

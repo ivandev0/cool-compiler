@@ -3,11 +3,12 @@
 
 namespace parser {
     Program Parser::parseProgram() {
+        if (!hasNext()) throwError();
         std::size_t line = iterator->line;
         std::vector<Class> classes;
         while (hasNext()) {
             classes.push_back(parseClass());
-            matchNext(";", "Error"); // TODO better message
+            matchNext(";");
         }
         return Program{{line}, classes};
     }
@@ -15,20 +16,26 @@ namespace parser {
     Class Parser::parseClass() {
         std::size_t line = iterator->line;
 
-        matchNextKind(Token::CLASS, "Error"); // TODO better message
+        matchNextKind(Token::CLASS);
 
-        checkNextKind(Token::TYPEID, "Error"); // TODO better message
+        checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
-        std::string parent = matchNextKind(Token::INHERITS) ? getNext().lexeme : "Object";
+        std::string parent;
+        if (matchNextKind(Token::INHERITS, false)) {
+            checkNextKind(Token::TYPEID);
+            parent = getNext().lexeme;
+        } else {
+            parent = "Object";
+        }
 
-        matchNext("{", "Error");  // TODO better message
+        matchNext("{");
         std::vector<Feature> features;
         while (peek().lexeme != "}") {
             features.push_back(parseFeature());
         }
-        matchNext("}", "Error");  // TODO better message
+        matchNext("}");
 
-        return Class{{line}, type, parent, features, filename}; // TODO filename
+        return Class{{line}, type, parent, features, filename};
     }
 
     Feature Parser::parseFeature() {
@@ -36,51 +43,52 @@ namespace parser {
         auto feature = peekNext().lexeme == ":" ?
                 Feature{{line}, parseAttrFeature()} :
                 Feature{{line}, parseMethodFeature()};
-        matchNext(";", "Error");
+        matchNext(";");
         return feature;
     }
 
     AttrFeature Parser::parseAttrFeature() {
         std::size_t line = iterator->line;
-        checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+        checkNextKind(Token::OBJECTID);
 
         auto id = parseIdExpression();
-        matchNext(":", "Error");  // TODO better message
-        checkNextKind(Token::TYPEID, "Error"); // TODO better message
+        matchNext(":");
+        checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
-        auto expr = matchNextKind(Token::ASSIGN) ? std::make_shared<Expression>(parseExpression()) : nullptr;
+        auto expr = std::make_shared<Expression>(matchNextKind(Token::ASSIGN, false) ? parseExpression() : createNoExpr());
 
         return AttrFeature{{line}, id, type, expr};
     }
 
     MethodFeature Parser::parseMethodFeature() {
         std::size_t line = iterator->line;
-        checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+        checkNextKind(Token::OBJECTID);
 
         auto id = parseIdExpression();
-        matchNext("(", "Error");  // TODO better message
+        matchNext("(");
         std::vector<Formal> formals;
         while (peek().lexeme != ")") {
             formals.push_back(parseFormal());
+            if (peek().lexeme != ")") matchNext(",");
         }
-        matchNext(")", "Error");  // TODO better message
-        matchNext(":", "Error");  // TODO better message
-        checkNextKind(Token::TYPEID, "Error"); // TODO better message
+        matchNext(")");
+        matchNext(":");
+        checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
 
-        matchNext("{", "Error");  // TODO better message
+        matchNext("{");
         auto expr = std::make_shared<Expression>(parseExpression());
-        matchNext("}", "Error");  // TODO better message
+        matchNext("}");
 
         return MethodFeature{{line}, id, formals, type, expr};
     }
 
     Formal Parser::parseFormal() {
         std::size_t line = iterator->line;
-        checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+        checkNextKind(Token::OBJECTID);
         auto id = parseIdExpression();
-        matchNext(":", "Error");  // TODO better message
-        checkNextKind(Token::TYPEID, "Error"); // TODO better message
+        matchNext(":");
+        checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
         return Formal{{line}, id, type};
     }
@@ -88,17 +96,17 @@ namespace parser {
 //  expr ::= ID <- expr
 //      | not_expr
 //
-//  not_expr ::= not expr
+//  not_expr ::= not not_expr
 //      | comp_expr
 //
-//  comp_expr ::= plus_sub_expr ( ( "<=" | "<" | "=") expr )*
-//  plus_sub_expr ::= mul_div_expr ( ( "+" | "-") expr )*
-//  mul_div_expr ::= isvoid_expr ( ( "*" | "/") expr )*
+//  comp_expr ::= plus_sub_expr ( ( "<=" | "<" | "=") plus_sub_expr )*
+//  plus_sub_expr ::= mul_div_expr ( ( "+" | "-") mul_div_expr )*
+//  mul_div_expr ::= isvoid_expr ( ( "*" | "/") isvoid_expr )*
 //
-//  isvoid_expr ::= isvoid expr
+//  isvoid_expr ::= isvoid isvoid_expr
 //      | neg_expr
 //
-//  neg_expr ::= ~ expr
+//  neg_expr ::= ~ neg_expr
 //      | static_dispatch_expr
 //
 //  static_dispatch_expr ::= dispatch_expr([@TYPE]?.ID( [ expr [[, expr]] ∗ ] ))*
@@ -133,8 +141,8 @@ namespace parser {
     Expression Parser::parseNotExpression() {
         std::size_t line = iterator->line;
 
-        if (matchNextKind(Token::NOT)) {
-            return Expression{{line}, NotExpression{{line}, std::make_shared<Expression>(parseExpression())}};
+        if (matchNextKind(Token::NOT, false)) {
+            return Expression{{line}, NotExpression{{line}, std::make_shared<Expression>(parseNotExpression())}};
         }
         return parseComparisonExpression();
     }
@@ -146,13 +154,13 @@ namespace parser {
         auto next = peek();
         while (next.kind == Token::LE || next.lexeme == "<" || next.lexeme == "=") {
             iterator++;
-            auto next_term = std::make_shared<Expression>(parseExpression());
+            auto next_term = std::make_shared<Expression>(parsePlusSubExpression());
             if (next.kind == Token::LE) {
-                term = Expression{{line}, LessOrEqualExpression{{line}, next_term}};
+                term = Expression{{line}, LessOrEqualExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             } else if (next.lexeme == "<") {
-                term = Expression{{line}, LessExpression{{line}, next_term}};
+                term = Expression{{line}, LessExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             } else {
-                term = Expression{{line}, EqualExpression{{line}, next_term}};
+                term = Expression{{line}, EqualExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             }
             next = peek();
             line = iterator->line;
@@ -168,11 +176,11 @@ namespace parser {
         auto next = peek();
         while (next.lexeme == "+" || next.lexeme == "-") {
             iterator++;
-            auto next_term = std::make_shared<Expression>(parseExpression());
+            auto next_term = std::make_shared<Expression>(parseMulDivExpression());
             if (next.lexeme == "+") {
-                term = Expression{{line}, PlusExpression{{line}, next_term}};
+                term = Expression{{line}, PlusExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             } else {
-                term = Expression{{line}, MinusExpression{{line}, next_term}};
+                term = Expression{{line}, MinusExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             }
             next = peek();
             line = iterator->line;
@@ -188,11 +196,11 @@ namespace parser {
         auto next = peek();
         while (next.lexeme == "*" || next.lexeme == "/") {
             iterator++;
-            auto next_term = std::make_shared<Expression>(parseExpression());
+            auto next_term = std::make_shared<Expression>(parseIsVoidExpression());
             if (next.lexeme == "*") {
-                term = Expression{{line}, MulExpression{{line}, next_term}};
+                term = Expression{{line}, MulExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             } else {
-                term = Expression{{line}, DivExpression{{line}, next_term}};
+                term = Expression{{line}, DivExpression{{line}, std::make_shared<Expression>(std::move(term)), next_term}};
             }
             next = peek();
             line = iterator->line;
@@ -203,16 +211,16 @@ namespace parser {
 
     Expression Parser::parseIsVoidExpression() {
         std::size_t line = iterator->line;
-        if (matchNextKind(Token::ISVOID)) {
-            return Expression{{line}, IsVoidExpression{{line}, std::make_shared<Expression>(parseExpression())}};
+        if (matchNextKind(Token::ISVOID, false)) {
+            return Expression{{line}, IsVoidExpression{{line}, std::make_shared<Expression>(parseIsVoidExpression())}};
         }
         return parseNegExpression();
     }
 
     Expression Parser::parseNegExpression() {
         std::size_t line = iterator->line;
-        if (matchNext("~")) {
-            return Expression{{line}, InverseExpression{{line}, std::make_shared<Expression>(parseExpression())}};
+        if (matchNext("~", false)) {
+            return Expression{{line}, InverseExpression{{line}, std::make_shared<Expression>(parseNegExpression())}};
         }
         return parseStaticDispatchExpression();
     }
@@ -224,23 +232,24 @@ namespace parser {
             std::size_t line = iterator->line;
 
             std::string type;
-            if (matchNext("@")) {
-                checkNextKind(Token::TYPEID, "Error"); // TODO better message
+            if (matchNext("@", false)) {
+                checkNextKind(Token::TYPEID);
                 type = getNext().lexeme;
             } else {
                 type = "";
             }
 
-            matchNext(".", "Error"); // TODO better message
-            checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+            matchNext(".");
+            checkNextKind(Token::OBJECTID);
             auto id = std::make_shared<IdExpression>(parseIdExpression());
 
-            matchNext("(", "Error"); // TODO better message
+            matchNext("(");
             std::vector<std::shared_ptr<Expression>> args;
-            while (peek().lexeme != ")") { // TODO and not eof
+            while (peek().lexeme != ")") {
                 args.push_back(std::make_shared<Expression>(parseExpression()));
+                if (peek().lexeme != ")") matchNext(",");
             }
-            matchNext(")", "Error"); // TODO better message
+            matchNext(")");
 
             if (type.empty()) {
                 term = Expression{{line}, DispatchExpression{{line}, std::make_shared<Expression>(term), id, args}};
@@ -258,15 +267,16 @@ namespace parser {
 
         if (peek().kind != Token::OBJECTID || peekNext().lexeme != "(") return parseAtomExpression();
         Expression expr = Expression{{line}, IdExpression{{line}, "self"}};
-        checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+        checkNextKind(Token::OBJECTID);
         auto id = parseIdExpression();
 
-        matchNext("(", "Error"); // TODO better message
+        matchNext("(");
         std::vector<std::shared_ptr<Expression>> args;
-        while (peek().lexeme != ")") { // TODO and not eof
+        while (peek().lexeme != ")") {
+            if (!args.empty()) matchNext(",");
             args.push_back(std::make_shared<Expression>(parseExpression()));
         }
-        matchNext(")", "Error"); // TODO better message
+        matchNext(")");
 
         return Expression{
                 {line},
@@ -305,86 +315,88 @@ namespace parser {
             return Expression{{line}, parseBoolExpression()};
         }
 
-        throw std::runtime_error("Unsupported expression");
+        throwError();
+        return createNoExpr(); // Unreachable code
     }
 
     AssignExpression Parser::parseAssignExpression() {
-        checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+        std::size_t line = iterator->line;
+        checkNextKind(Token::OBJECTID);
         auto id = std::make_shared<IdExpression>(parseIdExpression());
-        matchNextKind(Token::ASSIGN, "Error");
+        matchNextKind(Token::ASSIGN);
         auto expr = std::make_shared<Expression>(parseExpression());
-        return AssignExpression{{iterator->line}, id, expr};
+        return AssignExpression{{line}, id, expr};
     }
 
     IfExpression Parser::parseIfExpression() {
-        matchNextKind(Token::IF, "Error");
+        std::size_t line = iterator->line;
+        matchNextKind(Token::IF);
         auto condition = std::make_shared<Expression>(parseExpression());
-        matchNextKind(Token::THEN, "Error");
+        matchNextKind(Token::THEN);
         auto trueBranch = std::make_shared<Expression>(parseExpression());
-        matchNextKind(Token::ELSE, "Error");
+        matchNextKind(Token::ELSE);
         auto falseBranch = std::make_shared<Expression>(parseExpression());
-        matchNextKind(Token::FI, "Error");
-        return IfExpression{{iterator->line}, condition, trueBranch, falseBranch};
+        matchNextKind(Token::FI);
+        return IfExpression{{line}, condition, trueBranch, falseBranch};
     }
 
     WhileExpression Parser::parseWhileExpression() {
-        matchNextKind(Token::WHILE, "Error");
+        std::size_t line = iterator->line;
+        matchNextKind(Token::WHILE);
         auto condition = std::make_shared<Expression>(parseExpression());
-        matchNextKind(Token::LOOP, "Error");
+        matchNextKind(Token::LOOP);
         auto body = std::make_shared<Expression>(parseExpression());
-        matchNextKind(Token::POOL, "Error");
-        return WhileExpression{{iterator->line}, condition, body};
+        matchNextKind(Token::POOL);
+        return WhileExpression{{line}, condition, body};
     }
 
     BlockExpression Parser::parseBlockExpression() {
-        matchNext("{", "Error");
+        std::size_t line = iterator->line;
+        matchNext("{");
         std::vector<std::shared_ptr<Expression>> exprs;
-        while (peek().lexeme != "}") { // TODO and not eof
+        while (peek().lexeme != "}") {
             exprs.push_back(std::make_shared<Expression>(parseExpression()));
             matchNext(";", "");
         }
-        matchNext("}", "Error");
-        return BlockExpression{{iterator->line}, exprs};
+        if (exprs.empty()) throwError();
+        matchNext("}");
+        return BlockExpression{{line}, exprs};
     }
 
     LetExpression Parser::parseLetExpression() {
-        matchNextKind(Token::LET, "Error");
-        checkNextKind(Token::OBJECTID, "Error");
-
-        std::vector<LetStatementExpression> stmts;
-        while (peek().kind != Token::IN) { // TODO and not eof
-            stmts.push_back(parseLetStatementExpression());
-        }
-        matchNextKind(Token::IN, "Error"); // TODO better message
-        auto body = std::make_shared<Expression>(parseExpression());
-        return LetExpression{{iterator->line}, stmts, body};
+        matchNextKind(Token::LET);
+        checkNextKind(Token::OBJECTID);
+        return parseInnerLetExpression();
     }
 
     CaseExpression Parser::parseCaseExpression() {
-        matchNextKind(Token::CASE, "Error");
+        std::size_t line = iterator->line;
+        matchNextKind(Token::CASE);
         auto condition = std::make_shared<Expression>(parseExpression());
-        matchNextKind(Token::OF, "Error");
+        matchNextKind(Token::OF);
 
         std::vector<CaseBranchExpression> branches;
-        while (peek().kind != Token::ESAC) { // TODO and not eof
+        while (peek().kind != Token::ESAC) {
             branches.push_back(parseCaseBranchExpression());
         }
-        matchNextKind(Token::ESAC, "Error");
-        return CaseExpression{{iterator->line}, condition, branches};
+        matchNextKind(Token::ESAC);
+        return CaseExpression{{line}, condition, branches};
     }
 
     NewExpression Parser::parseNewExpression() {
-        matchNextKind(Token::NEW, "Error");
-        checkNextKind(Token::TYPEID, "Error");
+        std::size_t line = iterator->line;
+        matchNextKind(Token::NEW);
+        checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
-        return NewExpression{{iterator->line}, type};
+        return NewExpression{{line}, type};
     }
 
     InBracketsExpression Parser::parseInBracketsExpression() {
-        matchNext("(", "Error"); // TODO better message
+        std::size_t line = iterator->line;
+        matchNext("(");
         auto expr = std::make_shared<Expression>(parseExpression());
-        matchNext(")", "Error"); // TODO better message
-        return InBracketsExpression{{iterator->line}, expr};
+        matchNext(")");
+        return InBracketsExpression{{line}, expr};
     }
 
     IntExpression Parser::parseIntExpression() {
@@ -401,7 +413,7 @@ namespace parser {
 
     BoolExpression Parser::parseBoolExpression() {
         std::size_t line = iterator->line;
-        return BoolExpression{{line}, (iterator++)->lexeme == "True"};
+        return BoolExpression{{line}, (iterator++)->lexeme == "true"};
     }
 
     IdExpression Parser::parseIdExpression() {
@@ -409,26 +421,31 @@ namespace parser {
         return IdExpression{{line}, getNext().lexeme};
     }
 
-    LetStatementExpression Parser::parseLetStatementExpression() {
-        checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+    LetExpression Parser::parseInnerLetExpression() {
+        std::size_t line = iterator->line;
+        checkNextKind(Token::OBJECTID);
         auto id = std::make_shared<IdExpression>(parseIdExpression());
-        matchNext(":", "Error");  // TODO better message
-        checkNextKind(Token::TYPEID, "Error"); // TODO better message
+        matchNext(":");
+        checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
-        matchNextKind(Token::ASSIGN, "Error"); // TODO better message
-        auto expr = std::make_shared<Expression>(parseExpression());
-        return LetStatementExpression{{iterator->line}, id, type, expr};
+        auto expr = std::make_shared<Expression>(matchNextKind(Token::ASSIGN, false) ? parseExpression() : createNoExpr());
+        if (peek().kind != Token::IN) matchNext(",");
+        return LetExpression{
+            {line}, id, type, expr,
+            std::make_shared<Expression>(matchNextKind(Token::IN, false) ? parseExpression() : Expression{{line}, parseInnerLetExpression()})
+        };
     }
 
     CaseBranchExpression Parser::parseCaseBranchExpression() {
-        checkNextKind(Token::OBJECTID, "Error"); // TODO better message
+        std::size_t line = iterator->line;
+        checkNextKind(Token::OBJECTID);
         auto id = std::make_shared<IdExpression>(parseIdExpression());
-        matchNext(":", "Error");  // TODO better message
-        checkNextKind(Token::TYPEID, "Error"); // TODO better message
+        matchNext(":");
+        checkNextKind(Token::TYPEID);
         auto type = getNext().lexeme;
-        matchNextKind(Token::DARROW, "Error"); // TODO better message
+        matchNextKind(Token::DARROW);
         auto expr = std::make_shared<Expression>(parseExpression());
-        matchNext(";", "Error"); // TODO better message
-        return CaseBranchExpression{{iterator->line}, id, type, expr};
+        matchNext(";");
+        return CaseBranchExpression{{line}, id, type, expr};
     }
 }

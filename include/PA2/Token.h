@@ -44,7 +44,8 @@ public:
 
     Token(Kind kind, std::string lexeme, std::size_t line) : kind(kind), lexeme(std::move(lexeme)), line(line) {}
 
-    std::string toString();
+    std::string toString() const;
+    std::string toStringForParser() const;
 
 public:
     Kind kind;

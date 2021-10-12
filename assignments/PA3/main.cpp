@@ -36,10 +36,14 @@ std::stringstream getActual(const std::string& fileName) {
     }
 
     stringstream actualResult;
-    parser::Program program = parser::Parser(tokens, fileName).parseProgram();
-    auto printer = parser::PrintVisitor();
-    printer.visitProgram(program);
-    actualResult << printer.getResult() << endl;
+    try {
+        parser::Program program = parser::Parser(tokens, fileName).parseProgram();
+        auto printer = parser::PrintVisitor();
+        printer.visitProgram(program);
+        actualResult << printer.getResult() << endl;
+    } catch (std::runtime_error &e) {
+        actualResult << e.what() << endl;
+    }
     return actualResult;
 }
 

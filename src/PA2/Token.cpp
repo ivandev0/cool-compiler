@@ -33,7 +33,7 @@ std::string asString(Token::Kind kind) {
     }
 }
 
-std::string Token::toString() {
+std::string Token::toString() const {
     if (kind == Kind::ATOM) {
         return "#" + std::to_string(line) + " '" + lexeme + "'";
     } else if (kind == Kind::ERROR) {
@@ -42,5 +42,15 @@ std::string Token::toString() {
         return "#" + std::to_string(line) + " " + asString(kind);
     } else {
         return "#" + std::to_string(line) + " " + asString(kind) + " " + lexeme;
+    }
+}
+
+std::string Token::toStringForParser() const {
+    if (kind == Token::ATOM) {
+        return "'" + lexeme + "'";
+    } else if (lexeme.empty()) {
+        return asString(kind);
+    } else {
+        return asString(kind) + " = " + lexeme;
     }
 }
