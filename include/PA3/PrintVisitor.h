@@ -6,313 +6,313 @@
 namespace parser {
     class PrintVisitor: public ASTVisitor<void> {
     public:
-        void visitProgram(parser::Program &program) override {
-            printLine(program);
-            printStr("_program");
-            increaseOffset();
+        void VisitProgram(parser::Program &program) override {
+            PrintLine(program);
+            PrintStr("_program");
+            IncreaseOffset();
             for (auto klass: program.classes) {
-                visitClass(klass);
+                VisitClass(klass);
             }
-            decreaseOffset();
+            DecreaseOffset();
         }
 
-        std::string getResult() {
+        std::string GetResult() {
             return stream.str();
         }
 
     private:
-        void increaseOffset() { offset += 2; }
-        void decreaseOffset() { offset -= 2; }
+        void IncreaseOffset() { offset += 2; }
+        void DecreaseOffset() { offset -= 2; }
 
-        void printLine(const TreeNode &node) {
-            auto lineNumber = std::to_string(node.lineNumber);
+        void PrintLine(const TreeNode &node) {
+            auto lineNumber = std::to_string(node.line_number);
             stream << std::setw(static_cast<int>(offset + 1)) << "#" << lineNumber << std::endl;
         }
 
-        void printStr(const std::string &name) {
+        void PrintStr(const std::string &name) {
             stream << std::setw(static_cast<int>(offset + name.length())) << name << std::endl;
         }
 
-        void printType(const TreeNode &node) {
-            stream << std::setw(static_cast<int>(offset + 2)) << ": " << node.resultType << std::endl;
+        void PrintType(const TreeNode &node) {
+            stream << std::setw(static_cast<int>(offset + 2)) << ": " << node.result_type << std::endl;
         }
 
         // TODO these methods can be in handy if we introduce new type - Symbol
-        void printSymbol(const std::string &symbol) {
+        void PrintSymbol(const std::string &symbol) {
             if (symbol.empty()) return;
             stream << std::setw(static_cast<int>(offset + symbol.length())) << symbol << std::endl;
         }
 
-        void visitClass(Class &klass) override {
-            printLine(klass);
-            printStr("_class");
-            increaseOffset();
-            printSymbol(klass.type);
-            printSymbol(klass.parent);
-            printStr("\"" + klass.filename + "\"");
-            printStr("(");
+        void VisitClass(Class &klass) override {
+            PrintLine(klass);
+            PrintStr("_class");
+            IncreaseOffset();
+            PrintSymbol(klass.type);
+            PrintSymbol(klass.parent);
+            PrintStr("\"" + klass.filename + "\"");
+            PrintStr("(");
             for (auto feature: klass.features) {
-                visitFeature(feature);
+                VisitFeature(feature);
             }
-            printStr(")");
-            decreaseOffset();
+            PrintStr(")");
+            DecreaseOffset();
         }
 
-        void visitAttrFeature(AttrFeature &attrFeature) override {
-            printLine(attrFeature);
-            printStr("_attr");
-            increaseOffset();
-            printStr(attrFeature.id.id);    // must be `printStr` to match original parser
-            printSymbol(attrFeature.type);
-            visitExpression(*attrFeature.expr);
-            decreaseOffset();
+        void VisitAttrFeature(AttrFeature &attrFeature) override {
+            PrintLine(attrFeature);
+            PrintStr("_attr");
+            IncreaseOffset();
+            PrintStr(attrFeature.id.id);    // must be `PrintStr` to match original parser
+            PrintSymbol(attrFeature.type);
+            VisitExpression(*attrFeature.expr);
+            DecreaseOffset();
         }
 
-        void visitMethodFeature(MethodFeature &methodFeature) override {
-            printLine(methodFeature);
-            printStr("_method");
-            increaseOffset();
-            printStr(methodFeature.id.id);    // must be `printStr` to match original parser
+        void VisitMethodFeature(MethodFeature &methodFeature) override {
+            PrintLine(methodFeature);
+            PrintStr("_method");
+            IncreaseOffset();
+            PrintStr(methodFeature.id.id);    // must be `PrintStr` to match original parser
             for (auto param: methodFeature.params) {
-                visitFormal(param);
+                VisitFormal(param);
             }
-            printSymbol(methodFeature.returnType);
-            visitExpression(*methodFeature.expr);
-            decreaseOffset();
+            PrintSymbol(methodFeature.return_type);
+            VisitExpression(*methodFeature.expr);
+            DecreaseOffset();
         }
 
-        void visitFormal(Formal &formal) override {
-            printLine(formal);
-            printStr("_formal");
-            increaseOffset();
-            printStr(formal.id.id);    // must be `printStr` to match original parser
-            printSymbol(formal.type);
-            decreaseOffset();
+        void VisitFormal(Formal &formal) override {
+            PrintLine(formal);
+            PrintStr("_formal");
+            IncreaseOffset();
+            PrintStr(formal.id.id);    // must be `PrintStr` to match original parser
+            PrintSymbol(formal.type);
+            DecreaseOffset();
         }
 
-        void visitAssignExpression(AssignExpression &expr) override {
-            printLine(expr);
-            printStr("_assign");
-            increaseOffset();
-            printStr((*expr.id).id);    // must be `printStr` to match original parser
-            visitExpression(*expr.expr);
-            decreaseOffset();
-            printType(expr);
+        void VisitAssignExpression(AssignExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_assign");
+            IncreaseOffset();
+            PrintStr((*expr.id).id);    // must be `PrintStr` to match original parser
+            VisitExpression(*expr.expr);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitStaticDispatchExpression(StaticDispatchExpression &expr) override {
-            printLine(expr);
-            printStr("_static_dispatch");
-            increaseOffset();
-            visitExpression(*expr.expr);
-            printSymbol(expr.type);
-            printStr((*expr.id).id);    // must be `printStr` to match original parser
-            printStr("(");
+        void VisitStaticDispatchExpression(StaticDispatchExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_static_dispatch");
+            IncreaseOffset();
+            VisitExpression(*expr.expr);
+            PrintSymbol(expr.type);
+            PrintStr((*expr.id).id);    // must be `PrintStr` to match original parser
+            PrintStr("(");
             for (const auto& arg: expr.list) {
-                visitExpression(*arg);
+                VisitExpression(*arg);
             }
-            printStr(")");
-            decreaseOffset();
-            printType(expr);
+            PrintStr(")");
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitDispatchExpression(DispatchExpression &expr) override {
-            printLine(expr);
-            printStr("_dispatch");
-            increaseOffset();
-            visitExpression(*expr.expr);
-            printStr((*expr.id).id);    // must be `printStr` to match original parser
-            printStr("(");
+        void VisitDispatchExpression(DispatchExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_dispatch");
+            IncreaseOffset();
+            VisitExpression(*expr.expr);
+            PrintStr((*expr.id).id);    // must be `PrintStr` to match original parser
+            PrintStr("(");
             for (const auto& arg: expr.list) {
-                visitExpression(*arg);
+                VisitExpression(*arg);
             }
-            printStr(")");
-            decreaseOffset();
-            printType(expr);
+            PrintStr(")");
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitIfExpression(IfExpression &expr) override {
-            printLine(expr);
-            printStr("_cond");
-            increaseOffset();
-            visitExpression(*expr.condition);
-            visitExpression(*expr.trueBranch);
-            visitExpression(*expr.falseBranch);
-            decreaseOffset();
-            printType(expr);
+        void VisitIfExpression(IfExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_cond");
+            IncreaseOffset();
+            VisitExpression(*expr.condition);
+            VisitExpression(*expr.trueBranch);
+            VisitExpression(*expr.falseBranch);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitWhileExpression(WhileExpression &expr) override {
-            printLine(expr);
-            printStr("_loop");
-            increaseOffset();
-            visitExpression(*expr.condition);
-            visitExpression(*expr.body);
-            decreaseOffset();
-            printType(expr);
+        void VisitWhileExpression(WhileExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_loop");
+            IncreaseOffset();
+            VisitExpression(*expr.condition);
+            VisitExpression(*expr.body);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitBlockExpression(BlockExpression &expr) override {
-            printLine(expr);
-            printStr("_block");
-            increaseOffset();
+        void VisitBlockExpression(BlockExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_block");
+            IncreaseOffset();
             for (const auto& exprInBlock: expr.list) {
-                visitExpression(*exprInBlock);
+                VisitExpression(*exprInBlock);
             }
-            decreaseOffset();
-            printType(expr);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitLetExpression(LetExpression &expr) override {
-            printLine(expr);
-            printStr("_let");
-            increaseOffset();
-            printStr((*expr.id).id);    // must be `printStr` to match original parser
-            printSymbol(expr.type);
-            visitExpression(*expr.expr);
-            visitExpression(*expr.body);
-            decreaseOffset();
-            printType(expr);
+        void VisitLetExpression(LetExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_let");
+            IncreaseOffset();
+            PrintStr((*expr.id).id);    // must be `PrintStr` to match original parser
+            PrintSymbol(expr.type);
+            VisitExpression(*expr.expr);
+            VisitExpression(*expr.body);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitCaseExpression(CaseExpression &expr) override {
-            printLine(expr);
-            printStr("_typcase");
-            increaseOffset();
-            visitExpression(*expr.expr);
+        void VisitCaseExpression(CaseExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_typcase");
+            IncreaseOffset();
+            VisitExpression(*expr.expr);
             for (auto branch: expr.branches) {
-                visitCaseBranchExpression(branch);
+                VisitCaseBranchExpression(branch);
             }
-            decreaseOffset();
-            printType(expr);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitNewExpression(NewExpression &expr) override {
-            printLine(expr);
-            printStr("_new");
-            increaseOffset();
-            printSymbol(expr.type);
-            decreaseOffset();
-            printType(expr);
-        }
-
-        template<class T>
-        void visitUnaryExpression(T &expr, const std::string& op) {
-            printLine(expr);
-            printStr(op);
-            increaseOffset();
-            visitExpression(*expr.expr);
-            decreaseOffset();
-            printType(expr);
+        void VisitNewExpression(NewExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_new");
+            IncreaseOffset();
+            PrintSymbol(expr.type);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
         template<class T>
-        void visitBinaryExpression(T &expr, const std::string& op) {
-            printLine(expr);
-            printStr(op);
-            increaseOffset();
-            visitExpression(*expr.lhs);
-            visitExpression(*expr.rhs);
-            decreaseOffset();
-            printType(expr);
+        void VisitUnaryExpression(T &expr, const std::string& op) {
+            PrintLine(expr);
+            PrintStr(op);
+            IncreaseOffset();
+            VisitExpression(*expr.expr);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitIsVoidExpression(IsVoidExpression &expr) override {
-            visitUnaryExpression(expr, "_isvoid");
+        template<class T>
+        void VisitBinaryExpression(T &expr, const std::string& op) {
+            PrintLine(expr);
+            PrintStr(op);
+            IncreaseOffset();
+            VisitExpression(*expr.lhs);
+            VisitExpression(*expr.rhs);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitPlusExpression(PlusExpression &expr) override {
-            visitBinaryExpression(expr, "_plus");
+        void VisitIsVoidExpression(IsVoidExpression &expr) override {
+            VisitUnaryExpression(expr, "_isvoid");
         }
 
-        void visitMinusExpression(MinusExpression &expr) override {
-            visitBinaryExpression(expr, "_sub");
+        void VisitPlusExpression(PlusExpression &expr) override {
+            VisitBinaryExpression(expr, "_plus");
         }
 
-        void visitMulExpression(MulExpression &expr) override {
-            visitBinaryExpression(expr, "_mul");
+        void VisitMinusExpression(MinusExpression &expr) override {
+            VisitBinaryExpression(expr, "_sub");
         }
 
-        void visitDivExpression(DivExpression &expr) override {
-            visitBinaryExpression(expr, "_divide");
+        void VisitMulExpression(MulExpression &expr) override {
+            VisitBinaryExpression(expr, "_mul");
         }
 
-        void visitInverseExpression(InverseExpression &expr) override {
-            visitUnaryExpression(expr, "_neg");
+        void VisitDivExpression(DivExpression &expr) override {
+            VisitBinaryExpression(expr, "_divide");
         }
 
-        void visitLessExpression(LessExpression &expr) override {
-            visitBinaryExpression(expr, "_lt");
+        void VisitInverseExpression(InverseExpression &expr) override {
+            VisitUnaryExpression(expr, "_neg");
         }
 
-        void visitLessOrEqualExpression(LessOrEqualExpression &expr) override {
-            visitBinaryExpression(expr, "_leq");
+        void VisitLessExpression(LessExpression &expr) override {
+            VisitBinaryExpression(expr, "_lt");
         }
 
-        void visitEqualExpression(EqualExpression &expr) override {
-            visitBinaryExpression(expr, "_eq");
+        void VisitLessOrEqualExpression(LessOrEqualExpression &expr) override {
+            VisitBinaryExpression(expr, "_leq");
         }
 
-        void visitNotExpression(NotExpression &expr) override {
-            visitUnaryExpression(expr, "_comp");
+        void VisitEqualExpression(EqualExpression &expr) override {
+            VisitBinaryExpression(expr, "_eq");
         }
 
-        void visitInBracketsExpression(InBracketsExpression &expr) override {
-            visitExpression(*expr.expr);
+        void VisitNotExpression(NotExpression &expr) override {
+            VisitUnaryExpression(expr, "_comp");
         }
 
-        void visitIntExpression(IntExpression &expr) override {
-            printLine(expr);
-            printStr("_int");
-            increaseOffset();
-            printStr(std::to_string(expr.value));
-            decreaseOffset();
-            printType(expr);
+        void VisitInBracketsExpression(InBracketsExpression &expr) override {
+            VisitExpression(*expr.expr);
         }
 
-        void visitStringExpression(StringExpression &expr) override {
-            printLine(expr);
-            printStr("_string");
-            increaseOffset();
-            printStr(expr.value);
-            decreaseOffset();
-            printType(expr);
+        void VisitIntExpression(IntExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_int");
+            IncreaseOffset();
+            PrintStr(std::to_string(expr.value));
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitBoolExpression(BoolExpression &expr) override {
-            printLine(expr);
-            printStr("_bool");
-            increaseOffset();
-            printStr(std::to_string(expr.value));
-            decreaseOffset();
-            printType(expr);
+        void VisitStringExpression(StringExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_string");
+            IncreaseOffset();
+            PrintStr(expr.value);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitIdExpression(IdExpression &expr) override {
-            printLine(expr);
-            printStr("_object");
-            increaseOffset();
+        void VisitBoolExpression(BoolExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_bool");
+            IncreaseOffset();
+            PrintStr(std::to_string(expr.value));
+            DecreaseOffset();
+            PrintType(expr);
+        }
+
+        void VisitIdExpression(IdExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_object");
+            IncreaseOffset();
             stream << std::setw(static_cast<int>(offset + expr.id.length())) << expr.id << std::endl;
-            decreaseOffset();
-            printType(expr);
+            DecreaseOffset();
+            PrintType(expr);
         }
 
-        void visitNoExprExpression(NoExprExpression &expr) override {
-            printLine(expr);
+        void VisitNoExprExpression(NoExprExpression &expr) override {
+            PrintLine(expr);
             stream << std::setw(static_cast<int>(offset + expr.value.length())) << expr.value << std::endl;
-            printType(expr);
+            PrintType(expr);
         }
 
     private:
 
-        void visitCaseBranchExpression(CaseBranchExpression &expr) override {
-            printLine(expr);
-            printStr("_branch");
-            increaseOffset();
-            printStr((*expr.id).id);    // must be `printStr` to match original parser
-            printSymbol(expr.type);
-            visitExpression(*expr.expr);
-            decreaseOffset();
+        void VisitCaseBranchExpression(CaseBranchExpression &expr) override {
+            PrintLine(expr);
+            PrintStr("_branch");
+            IncreaseOffset();
+            PrintStr((*expr.id).id);    // must be `PrintStr` to match original parser
+            PrintSymbol(expr.type);
+            VisitExpression(*expr.expr);
+            DecreaseOffset();
         }
 
     private:

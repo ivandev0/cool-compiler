@@ -7,8 +7,8 @@
 
 namespace parser {
     struct TreeNode {
-        std::size_t lineNumber = 0;
-        std::string resultType = "_no_type";
+        std::size_t line_number = 0;
+        std::string result_type = "_no_type";
     };
 
     struct Class;
@@ -47,7 +47,7 @@ namespace parser {
     struct MethodFeature : TreeNode {
         IdExpression id;
         std::vector<Formal> params;
-        std::string returnType;
+        std::string return_type;
         std::shared_ptr<Expression> expr;
     };
 

@@ -11,8 +11,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    auto fileName = argv[1];
-    ifstream file(fileName);
+    auto file_name = argv[1];
+    ifstream file(file_name);
 
     if (file.is_open()) {
         stringstream buffer;
@@ -20,12 +20,12 @@ int main(int argc, char** argv) {
         file.close();
 
         auto lexer = lexer::Lexer(buffer.str());
-        cout << "#name " << std::filesystem::path(fileName).filename() << endl;
-        while (lexer.hasNext()) {
-            cout << lexer.next().toString() << endl;
+        cout << "#name " << std::filesystem::path(file_name).filename() << endl;
+        while (lexer.HasNext()) {
+            cout << lexer.Next().ToString() << endl;
         }
     } else {
-        cerr << "File " << fileName << " wasn't found" << endl;
+        cerr << "File " << file_name << " wasn't found" << endl;
         return 1;
     }
     return 0;

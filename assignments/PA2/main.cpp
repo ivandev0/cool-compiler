@@ -3,54 +3,52 @@
 #include <fstream>
 #include <cassert>
 
-using namespace std;
-
-std::stringstream getExpected(const std::string& lexerPath, const std::string& fileName) {
-    std::system((lexerPath + " " + fileName + " > expected.txt").c_str());
-    ifstream expectedFile("expected.txt");
-    stringstream expectedResult;
-    expectedResult << expectedFile.rdbuf();
-    expectedFile.close();
+std::stringstream GetExpected(const std::string& lexer_path, const std::string& file_name) {
+    std::system((lexer_path + " " + file_name + " > expected.txt").c_str());
+    std::ifstream expected_file("expected.txt");
+    std::stringstream expected_result;
+    expected_result << expected_file.rdbuf();
+    expected_file.close();
     std::remove("expected.txt");
 
-    return expectedResult;
+    return expected_result;
 }
 
-std::stringstream getActual(const std::string& fileName) {
-    ifstream file(fileName);
+std::stringstream GetActual(const std::string& file_name) {
+    std::ifstream file(file_name);
     if (!file.is_open()) {
-        throw std::runtime_error("File " + fileName + " wasn't found");
+        throw std::runtime_error("File " + file_name + " wasn't found");
     }
 
-    stringstream buffer;
+    std::stringstream buffer;
     buffer << file.rdbuf();
     file.close();
 
-    stringstream actualResult;
+    std::stringstream actual_result;
     auto lexer = lexer::Lexer(buffer.str());
-    actualResult << "#name \"" << fileName << "\"" << endl;
-    while (lexer.hasNext()) {
-        actualResult << lexer.next().toString() << endl;
+    actual_result << "#name \"" << file_name << "\"" << std::endl;
+    while (lexer.HasNext()) {
+        actual_result << lexer.Next().ToString() << std::endl;
     }
-    return actualResult;
+    return actual_result;
 }
 
 int main(int argc, char** argv) {
-    auto lexerPath = std::string(argv[1]);
-    auto fileName = std::string(argv[2]);
+    auto lexer_path = std::string(argv[1]);
+    auto file_name = std::string(argv[2]);
 
-    auto expectedResult = getExpected(lexerPath, fileName);
-    auto actualResult = getActual(fileName);
+    auto expected_result = GetExpected(lexer_path, file_name);
+    auto actual_result = GetActual(file_name);
 
     std::string actual;
     std::string expect;
-    while (std::getline(expectedResult, expect, '\n') && std::getline(actualResult, actual, '\n')) {
+    while (std::getline(expected_result, expect, '\n') && std::getline(actual_result, actual, '\n')) {
         if (actual == expect) {
-            cout << actual << endl;
+            std::cout << actual << std::endl;
         } else {
-            cerr << "Lines are not equal." << endl;
-            cerr << "Expected:" << endl << expect << endl;
-            cerr << "Actual:" << endl << actual << endl;
+            std::cerr << "Lines are not equal." << std::endl;
+            std::cerr << "Expected:" << std::endl << expect << std::endl;
+            std::cerr << "Actual:" << std::endl << actual << std::endl;
             return 1;
         }
     }

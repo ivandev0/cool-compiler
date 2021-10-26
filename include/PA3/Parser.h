@@ -9,95 +9,94 @@
 namespace parser {
     class Parser {
     public:
-        explicit Parser(const std::vector<Token> &tokens, std::string filename)
-            : iterator(tokens.cbegin()), end(tokens.cend()), filename(std::move(filename)) {}
-        Program parseProgram();
+        Parser(const std::vector<Token> &tokens, std::string filename)
+            : iterator_(tokens.cbegin()), end_(tokens.cend()), filename_(std::move(filename)) {}
+        Program ParseProgram();
 
     private:
-        Class parseClass();
-        Feature parseFeature();
-        AttrFeature parseAttrFeature();
-        MethodFeature parseMethodFeature();
-        Formal parseFormal();
+        Class ParseClass();
+        Feature ParseFeature();
+        AttrFeature ParseAttrFeature();
+        MethodFeature ParseMethodFeature();
+        Formal ParseFormal();
 
-        Expression parseExpression();
-        AssignExpression parseAssignExpression();
-        IfExpression parseIfExpression();
-        WhileExpression parseWhileExpression();
-        BlockExpression parseBlockExpression();
-        LetExpression parseLetExpression();
-        CaseExpression parseCaseExpression();
-        NewExpression parseNewExpression();
-        InBracketsExpression parseInBracketsExpression();
-        IntExpression parseIntExpression();
-        StringExpression parseStringExpression();
-        BoolExpression parseBoolExpression();
-        IdExpression parseIdExpression();
+        Expression ParseExpression();
+        IfExpression ParseIfExpression();
+        WhileExpression ParseWhileExpression();
+        BlockExpression ParseBlockExpression();
+        LetExpression ParseLetExpression();
+        CaseExpression ParseCaseExpression();
+        NewExpression ParseNewExpression();
+        InBracketsExpression ParseInBracketsExpression();
+        IntExpression ParseIntExpression();
+        StringExpression ParseStringExpression();
+        BoolExpression ParseBoolExpression();
+        IdExpression ParseIdExpression();
 
-        LetExpression parseInnerLetExpression();
-        CaseBranchExpression parseCaseBranchExpression();
+        LetExpression ParseInnerLetExpression();
+        CaseBranchExpression ParseCaseBranchExpression();
 
-        Expression parseNotExpression();
-        Expression parseComparisonExpression();
-        Expression parsePlusSubExpression();
-        Expression parseMulDivExpression();
-        Expression parseIsVoidExpression();
-        Expression parseNegExpression();
-        Expression parseStaticDispatchExpression();
-        Expression parseDispatchExpression();
-        Expression parseAtomExpression();
+        Expression ParseNotExpression();
+        Expression ParseComparisonExpression();
+        Expression ParsePlusSubExpression();
+        Expression ParseMulDivExpression();
+        Expression ParseIsVoidExpression();
+        Expression ParseNegExpression();
+        Expression ParseStaticDispatchExpression();
+        Expression ParseDispatchExpression();
+        Expression ParseAtomExpression();
 
     private:
-        bool hasNext() { return iterator != end; }
-        Token getNext() { return *(iterator++); }
+        bool HasNext() { return iterator_ != end_; }
+        Token GetNext() { return *(iterator_++); }
 
-        Token peek() {
-            if (hasNext()) return *iterator;
+        Token Peek() {
+            if (HasNext()) return *iterator_;
             return {"EOF", 0};
         }
-        Token peekNext() {
-            if (!hasNext() || (iterator + 1) == end) return {"EOF", 0};
-            return *(iterator + 1);
+        Token PeekNext() {
+            if (!HasNext() || (iterator_ + 1) == end_) return {"EOF", 0};
+            return *(iterator_ + 1);
         }
 
-        void throwError() {
-            auto tokenStr = !hasNext() ? "EOF" : iterator->toStringForParser();
-            auto line = !hasNext() ? "0" : std::to_string(iterator->line);
-            auto message = "\"" + filename + "\", line " + line + ": syntax error at or near " + tokenStr;
+        void ThrowError() {
+            auto tokenStr = !HasNext() ? "EOF" : iterator_->ToStringForParser();
+            auto line = !HasNext() ? "0" : std::to_string(iterator_->line_);
+            auto message = "\"" + filename_ + "\", line " + line + ": syntax error at or near " + tokenStr;
             throw std::runtime_error(message);
         }
 
-        bool checkNext(const std::string &symbol, bool withError = true) {
-            if (peek().lexeme == symbol) return true;
-            if (withError) throwError();
+        bool CheckNext(const std::string &symbol, bool with_error = true) {
+            if (Peek().lexeme_ == symbol) return true;
+            if (with_error) ThrowError();
             return false;
         }
 
-        bool checkNextKind(const Token::Kind &kind, bool withError = true) {
-            if (peek().kind == kind) return true;
-            if (withError) throwError();
+        bool CheckNextKind(const Token::Kind &kind, bool with_error = true) {
+            if (Peek().kind_ == kind) return true;
+            if (with_error) ThrowError();
             return false;
         }
 
-        bool matchNext(const std::string &symbol, bool withError = true) {
-            if (!checkNext(symbol, withError)) return false;
-            getNext();
+        bool MatchNext(const std::string &symbol, bool with_error = true) {
+            if (!CheckNext(symbol, with_error)) return false;
+            GetNext();
             return true;
         }
 
-        bool matchNextKind(const Token::Kind &kind, bool withError = true) {
-            if (!checkNextKind(kind, withError)) return false;
-            getNext();
+        bool MatchNextKind(const Token::Kind &kind, bool with_error = true) {
+            if (!CheckNextKind(kind, with_error)) return false;
+            GetNext();
             return true;
         }
 
-        static Expression createNoExpr() {
+        static Expression CreateNoExpr() {
             return {{0}, NoExprExpression{}};
         }
 
     private:
-        std::vector<Token>::const_iterator iterator;
-        std::vector<Token>::const_iterator end;
-        std::string filename;
+        std::vector<Token>::const_iterator iterator_;
+        std::vector<Token>::const_iterator end_;
+        std::string filename_;
     };
 }

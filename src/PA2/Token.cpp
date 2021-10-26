@@ -1,6 +1,6 @@
 #include "Token.h"
 
-std::string asString(Token::Kind kind) {
+std::string AsString(Token::Kind kind) {
     switch (kind) {
         case Token::Kind::CLASS: return "CLASS";
         case Token::Kind::ELSE: return "ELSE";
@@ -29,28 +29,28 @@ std::string asString(Token::Kind kind) {
         case Token::Kind::LE: return "LE";
         case Token::Kind::ERROR: return "ERROR";
         case Token::Kind::LET_STMT: return "LET_STMT";
-        default: throw std::runtime_error("Unknown kind of token");
+        default: throw std::runtime_error("Unknown kind_ of token");
     }
 }
 
-std::string Token::toString() const {
-    if (kind == Kind::ATOM) {
-        return "#" + std::to_string(line) + " '" + lexeme + "'";
-    } else if (kind == Kind::ERROR) {
-        return "#" + std::to_string(line) + " " + asString(kind) + " \"" + lexeme + "\"";
-    } else if (lexeme.empty()) {
-        return "#" + std::to_string(line) + " " + asString(kind);
+std::string Token::ToString() const {
+    if (kind_ == Kind::ATOM) {
+        return "#" + std::to_string(line_) + " '" + lexeme_ + "'";
+    } else if (kind_ == Kind::ERROR) {
+        return "#" + std::to_string(line_) + " " + AsString(kind_) + " \"" + lexeme_ + "\"";
+    } else if (lexeme_.empty()) {
+        return "#" + std::to_string(line_) + " " + AsString(kind_);
     } else {
-        return "#" + std::to_string(line) + " " + asString(kind) + " " + lexeme;
+        return "#" + std::to_string(line_) + " " + AsString(kind_) + " " + lexeme_;
     }
 }
 
-std::string Token::toStringForParser() const {
-    if (kind == Token::ATOM) {
-        return "'" + lexeme + "'";
-    } else if (lexeme.empty()) {
-        return asString(kind);
+std::string Token::ToStringForParser() const {
+    if (kind_ == Token::ATOM) {
+        return "'" + lexeme_ + "'";
+    } else if (lexeme_.empty()) {
+        return AsString(kind_);
     } else {
-        return asString(kind) + " = " + lexeme;
+        return AsString(kind_) + " = " + lexeme_;
     }
 }

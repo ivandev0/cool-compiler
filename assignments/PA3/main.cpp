@@ -6,68 +6,66 @@
 #include "Parser.h"
 #include "PrintVisitor.h"
 
-using namespace std;
-
-std::stringstream getExpected(const std::string& lexerPath, const std::string& parserPath, const std::string& fileName) {
-    std::system((lexerPath + " " + fileName + " | " + parserPath + " > expected.txt 2>&1").c_str());
-    ifstream expectedFile("expected.txt");
-    stringstream expectedResult;
-    expectedResult << expectedFile.rdbuf();
-    expectedFile.close();
+std::stringstream GetExpected(const std::string& lexer_path, const std::string& parser_path, const std::string& file_name) {
+    std::system((lexer_path + " " + file_name + " | " + parser_path + " > expected.txt 2>&1").c_str());
+    std::ifstream expected_file("expected.txt");
+    std::stringstream expected_result;
+    expected_result << expected_file.rdbuf();
+    expected_file.close();
     std::remove("expected.txt");
 
-    return expectedResult;
+    return expected_result;
 }
 
-std::stringstream getActual(const std::string& fileName) {
-    ifstream file(fileName);
+std::stringstream GetActual(const std::string& file_name) {
+    std::ifstream file(file_name);
     if (!file.is_open()) {
-        throw std::runtime_error("File " + fileName + " wasn't found");
+        throw std::runtime_error("File " + file_name + " wasn't found");
     }
 
-    stringstream buffer;
+    std::stringstream buffer;
     buffer << file.rdbuf();
     file.close();
 
     std::vector<Token> tokens;
     auto lexer = lexer::Lexer(buffer.str());
-    while (lexer.hasNext()) {
-        tokens.push_back(lexer.next());
+    while (lexer.HasNext()) {
+        tokens.push_back(lexer.Next());
     }
 
-    stringstream actualResult;
+    std::stringstream actual_result;
     try {
-        parser::Program program = parser::Parser(tokens, fileName).parseProgram();
+        parser::Program program = parser::Parser(tokens, file_name).ParseProgram();
         auto printer = parser::PrintVisitor();
-        printer.visitProgram(program);
-        actualResult << printer.getResult() << endl;
+        printer.VisitProgram(program);
+        actual_result << printer.GetResult() << std::endl;
     } catch (std::runtime_error &e) {
-        actualResult << e.what() << endl;
+        actual_result << e.what() << std::endl;
     }
-    return actualResult;
+    return actual_result;
 }
 
 int main(int argc, char** argv) {
-    auto lexerPath = std::string(argv[1]);
-    auto parserPath = std::string(argv[2]);
-    auto fileName = std::string(argv[3]);
+    auto lexer_path = std::string(argv[1]);
+    auto parser_path = std::string(argv[2]);
+    auto file_name = std::string(argv[3]);
 
-    auto expectedResult = getExpected(lexerPath, parserPath, fileName);
-    auto actualResult = getActual(fileName);
+    auto expected_result = GetExpected(lexer_path, parser_path, file_name);
+    auto actual_result = GetActual(file_name);
 
     std::string actual;
     std::string expect;
-    while (std::getline(expectedResult, expect, '\n') && std::getline(actualResult, actual, '\n')) {
+    while (std::getline(expected_result, expect, '\n') && std::getline(actual_result, actual, '\n')) {
         if (actual == expect) {
-            cout << actual << endl;
+            std::cout << actual << std::endl;
         } else {
-            cerr << "Lines are not equal." << endl;
-            cerr << "Expected:" << endl << expect << endl;
-            cerr << "Actual:" << endl << actual << endl;
+            std::cerr << "Lines are not equal." << std::endl;
+            std::cerr << "Expected:" << std::endl << expect << std::endl;
+            std::cerr << "Actual:" << std::endl << actual << std::endl;
             return 1;
         }
     }
-    cout << actual.c_str() << endl;
-    cout << expect.c_str() << endl;
+    std::cout << actual.c_str() << std::endl;
+    std::cout << expect.c_str() << std::endl;
     return 0;
 }

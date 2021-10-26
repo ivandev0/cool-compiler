@@ -14,8 +14,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    auto fileName = argv[1];
-    ifstream file(fileName);
+    auto file_name = argv[1];
+    ifstream file(file_name);
 
     if (file.is_open()) {
         stringstream buffer;
@@ -24,15 +24,15 @@ int main(int argc, char **argv) {
 
         std::vector<Token> tokens;
         auto lexer = lexer::Lexer(buffer.str());
-        while (lexer.hasNext()) {
-            tokens.push_back(lexer.next());
+        while (lexer.HasNext()) {
+            tokens.push_back(lexer.Next());
         }
-        parser::Program program = parser::Parser(tokens, fileName).parseProgram();
+        parser::Program program = parser::Parser(tokens, file_name).ParseProgram();
         auto printer = parser::PrintVisitor();
-        printer.visitProgram(program);
-        cout << printer.getResult() << endl;
+        printer.VisitProgram(program);
+        cout << printer.GetResult() << endl;
     } else {
-        cerr << "File " << fileName << " wasn't found" << endl;
+        cerr << "File " << file_name << " wasn't found" << endl;
         return 1;
     }
     return 0;

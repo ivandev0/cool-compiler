@@ -38,17 +38,17 @@ public:
         ATOM // used for single atom symbol
     };
 
-    Token(Kind kind, std::size_t line) : kind(kind), lexeme(""), line(line) {}
+    Token(Kind kind, std::size_t line) : kind_(kind), lexeme_(""), line_(line) {}
 
-    Token(std::string lexeme, std::size_t line) : kind(Kind::ATOM), lexeme(std::move(lexeme)), line(line) {}
+    Token(std::string lexeme, std::size_t line) : kind_(Kind::ATOM), lexeme_(std::move(lexeme)), line_(line) {}
 
-    Token(Kind kind, std::string lexeme, std::size_t line) : kind(kind), lexeme(std::move(lexeme)), line(line) {}
+    Token(Kind kind, std::string lexeme, std::size_t line) : kind_(kind), lexeme_(std::move(lexeme)), line_(line) {}
 
-    std::string toString() const;
-    std::string toStringForParser() const;
+    std::string ToString() const;
+    std::string ToStringForParser() const;
 
 public:
-    Kind kind;
-    std::string lexeme;
-    std::size_t line;
+    Kind kind_;
+    std::string lexeme_;
+    std::size_t line_;
 };
