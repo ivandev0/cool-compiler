@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
         }
         parser::Program program = parser::Parser(tokens, file_name).ParseProgram();
         auto printer = parser::PrintVisitor();
-        printer.VisitProgram(program);
+        printer.VisitProgram(&program);
         cout << printer.GetResult() << endl;
     } else {
         cerr << "File " << file_name << " wasn't found" << endl;

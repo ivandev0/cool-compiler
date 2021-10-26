@@ -37,7 +37,7 @@ std::stringstream GetActual(const std::string& file_name) {
     try {
         parser::Program program = parser::Parser(tokens, file_name).ParseProgram();
         auto printer = parser::PrintVisitor();
-        printer.VisitProgram(program);
+        printer.VisitProgram(&program);
         actual_result << printer.GetResult() << std::endl;
     } catch (std::runtime_error &e) {
         actual_result << e.what() << std::endl;
