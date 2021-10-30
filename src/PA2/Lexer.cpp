@@ -1,7 +1,7 @@
 #include "Lexer.h"
 #include "Utils.h"
 
-bool lexer::Lexer::HasNext() {
+bool lexer::SingleFileLexer::HasNext() {
     if (line_number_ == -1) return true;
     if (IsAtEnd()) return false;
     while (!IsAtEnd()) {
@@ -19,7 +19,7 @@ bool lexer::Lexer::HasNext() {
     return !IsAtEnd();
 }
 
-Token lexer::Lexer::Next() {
+Token lexer::SingleFileLexer::Next() {
     if (line_number_ == -1) {
         line_number_ = 1;
         return Token{file_name_, 0};
@@ -89,17 +89,17 @@ Token lexer::Lexer::Next() {
     throw std::runtime_error("There are no tokens left");
 }
 
-char lexer::Lexer::Advance() {
+char lexer::SingleFileLexer::Advance() {
     if (program_.peek() == '\n') line_number_++;
     return (char) program_.get();
 }
 
-char lexer::Lexer::Peek() {
+char lexer::SingleFileLexer::Peek() {
     if (IsAtEnd()) return '\0';
     return (char) program_.peek();
 }
 
-char lexer::Lexer::PeekNext() {
+char lexer::SingleFileLexer::PeekNext() {
     if (IsAtEnd()) return '\0';
     program_.get();
     if (IsAtEnd()) return '\0';
@@ -108,7 +108,7 @@ char lexer::Lexer::PeekNext() {
     return c;
 }
 
-bool lexer::Lexer::Match(char expected) {
+bool lexer::SingleFileLexer::Match(char expected) {
     if (IsAtEnd()) return false;
     if (program_.peek() != expected) return false;
 
@@ -116,12 +116,12 @@ bool lexer::Lexer::Match(char expected) {
     return true;
 }
 
-bool lexer::Lexer::IsAtEnd() {
+bool lexer::SingleFileLexer::IsAtEnd() {
     program_.peek(); // extra peek to set eof flag (?)
     return program_.eof();
 }
 
-Token lexer::Lexer::String() {
+Token lexer::SingleFileLexer::String() {
     std::size_t size = 0;
     std::stringstream result;
     result << Advance(); // get '"'
@@ -159,14 +159,14 @@ Token lexer::Lexer::String() {
     return {Token::Kind::STR_CONST, result.str(), line_number_};
 }
 
-Token lexer::Lexer::Number() {
+Token lexer::SingleFileLexer::Number() {
     std::vector<char> number;
     while (IsDigit(Peek()) && !IsAtEnd()) number.push_back(Advance());
     std::string number_str(number.begin(), number.end());
     return {Token::Kind::INT_CONST, number_str, line_number_};
 }
 
-Token lexer::Lexer::Identifier() {
+Token lexer::SingleFileLexer::Identifier() {
     std::vector<char> id;
     while (IsAlphaOdDigitOrUnderscore(Peek()) && !IsAtEnd()) id.push_back(Advance());
 
@@ -182,7 +182,7 @@ Token lexer::Lexer::Identifier() {
     return {islower(text[0]) ? Token::Kind::OBJECTID : Token::Kind::TYPEID, text, line_number_};
 }
 
-Token::Kind lexer::Lexer::GetKeywordType(const std::string& str) {
+Token::Kind lexer::SingleFileLexer::GetKeywordType(const std::string& str) {
     auto lowercase_str = ToLowerCase(str);
     if (lowercase_str == "class") return Token::Kind::CLASS;
     if (lowercase_str == "else") return Token::Kind::ELSE;
@@ -205,7 +205,7 @@ Token::Kind lexer::Lexer::GetKeywordType(const std::string& str) {
     return Token::Kind::ERROR;
 }
 
-bool lexer::Lexer::TryToSkipMultiLineComment() {
+bool lexer::SingleFileLexer::TryToSkipMultiLineComment() {
     comments_ = 1;
     while (comments_ != 0 && !IsAtEnd()) {
         if (Peek() == '*' && PeekNext() == ')') comments_--;

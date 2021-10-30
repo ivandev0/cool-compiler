@@ -17,10 +17,10 @@ namespace parser {
     }
 
     Class Parser::ParseClass() {
+        if (Peek().line_ == 0) filename_ = GetNext().lexeme_;
         std::size_t line = iterator_->line_;
 
         MatchNextKind(Token::CLASS);
-
         CheckNextKind(Token::TYPEID);
         auto type = GetNext().lexeme_;
         std::string parent;

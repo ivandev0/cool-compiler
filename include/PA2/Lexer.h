@@ -4,12 +4,23 @@
 #include "Token.h"
 
 namespace lexer {
+    struct LexerInput {
+        std::istream& program;
+        std::string file_name;
+    };
+
     class Lexer {
     public:
-        explicit Lexer(std::istream& program, std::string file_name) : program_(program), file_name_(std::move(file_name)) {}
+        virtual bool HasNext() = 0;
+        virtual Token Next() = 0;
+    };
 
-        bool HasNext();
-        Token Next();
+    class SingleFileLexer: Lexer {
+    public:
+        explicit SingleFileLexer(LexerInput input) : program_(input.program), file_name_(std::move(input.file_name)) {}
+
+        bool HasNext() override;
+        Token Next() override;
 
     private:
         char Advance();
@@ -32,4 +43,31 @@ namespace lexer {
         static const std::size_t MAX_STR_LENGTH_ = 1024;
     };
 
+    class MultiFileLexer: Lexer {
+    public:
+        explicit MultiFileLexer(std::vector<LexerInput> inputs): inputs_(std::move(inputs)) {}
+
+        bool HasNext() override {
+            if (lexer_ == nullptr && current_ >= inputs_.size()) return false;
+            if (lexer_ == nullptr) lexer_ = new SingleFileLexer(inputs_[current_++]);
+            if (lexer_->HasNext()) return true;
+
+            delete lexer_;
+            lexer_ = nullptr;
+            return HasNext();
+        }
+
+        Token Next() override {
+            return lexer_->Next();
+        }
+
+        virtual ~MultiFileLexer() {
+            delete lexer_;
+            lexer_ = nullptr;
+        }
+    private:
+        std::vector<LexerInput> inputs_;
+        std::size_t current_ = 0;
+        SingleFileLexer* lexer_ = nullptr;
+    };
 }

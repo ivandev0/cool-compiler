@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     ifstream file(file_name);
 
     if (file.is_open()) {
-        auto lexer = lexer::Lexer(file, file_name);
+        auto lexer = lexer::SingleFileLexer({file, file_name});
         while (lexer.HasNext()) {
             cout << lexer.Next().ToString() << endl;
         }

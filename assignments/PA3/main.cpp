@@ -24,7 +24,7 @@ std::stringstream GetActual(const std::string& file_name) {
     }
 
     std::vector<Token> tokens;
-    auto lexer = lexer::Lexer(file, file_name);
+    auto lexer = lexer::SingleFileLexer({file, file_name});
     while (lexer.HasNext()) {
         tokens.push_back(lexer.Next());
     }
