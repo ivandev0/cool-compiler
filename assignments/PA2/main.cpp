@@ -20,8 +20,7 @@ std::stringstream GetActual(const std::string& file_name) {
     }
 
     std::stringstream actual_result;
-    auto lexer = lexer::Lexer(file);
-    actual_result << "#name \"" << file_name << "\"" << std::endl;
+    auto lexer = lexer::Lexer(file, file_name);
     while (lexer.HasNext()) {
         actual_result << lexer.Next().ToString() << std::endl;
     }

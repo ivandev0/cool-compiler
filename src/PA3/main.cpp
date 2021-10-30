@@ -19,13 +19,13 @@ int main(int argc, char **argv) {
 
     if (file.is_open()) {
         std::vector<Token> tokens;
-        auto lexer = lexer::Lexer(file);
+        auto lexer = lexer::Lexer(file, file_name);
         while (lexer.HasNext()) {
             tokens.push_back(lexer.Next());
         }
         file.close();
 
-        parser::Program program = parser::Parser(tokens, file_name).ParseProgram();
+        parser::Program program = parser::Parser(tokens).ParseProgram();
         auto printer = parser::PrintVisitor();
         printer.VisitProgram(&program);
         cout << printer.GetResult() << endl;

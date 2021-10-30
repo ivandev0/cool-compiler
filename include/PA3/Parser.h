@@ -9,8 +9,7 @@
 namespace parser {
     class Parser {
     public:
-        Parser(const std::vector<Token> &tokens, std::string filename)
-            : iterator_(tokens.cbegin()), end_(tokens.cend()), filename_(std::move(filename)) {}
+        explicit Parser(const std::vector<Token> &tokens) : iterator_(tokens.cbegin()), end_(tokens.cend()) {}
         Program ParseProgram();
 
     private:

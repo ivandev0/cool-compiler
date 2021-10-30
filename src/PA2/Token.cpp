@@ -34,7 +34,9 @@ std::string AsString(Token::Kind kind) {
 }
 
 std::string Token::ToString() const {
-    if (kind_ == Kind::ATOM) {
+    if (line_ == 0) {
+        return "#name \"" + lexeme_ + "\"";
+    } else if (kind_ == Kind::ATOM) {
         return "#" + std::to_string(line_) + " '" + lexeme_ + "'";
     } else if (kind_ == Kind::ERROR) {
         return "#" + std::to_string(line_) + " " + AsString(kind_) + " \"" + lexeme_ + "\"";

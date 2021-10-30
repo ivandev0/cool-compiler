@@ -2,6 +2,7 @@
 #include "Utils.h"
 
 bool lexer::Lexer::HasNext() {
+    if (line_number_ == -1) return true;
     if (IsAtEnd()) return false;
     while (!IsAtEnd()) {
         if (Peek() == '-' && PeekNext() == '-') {
@@ -19,6 +20,11 @@ bool lexer::Lexer::HasNext() {
 }
 
 Token lexer::Lexer::Next() {
+    if (line_number_ == -1) {
+        line_number_ = 1;
+        return Token{file_name_, 0};
+    }
+
     if (IsAtEnd() && comments_ != 0) {
         return {Token::Kind::ERROR, "EOF in comment", line_number_};
     }

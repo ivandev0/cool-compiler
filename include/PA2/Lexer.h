@@ -6,7 +6,7 @@
 namespace lexer {
     class Lexer {
     public:
-        explicit Lexer(std::istream& program) : program_(program) {}
+        explicit Lexer(std::istream& program, std::string file_name) : program_(program), file_name_(std::move(file_name)) {}
 
         bool HasNext();
         Token Next();
@@ -25,7 +25,8 @@ namespace lexer {
         bool TryToSkipMultiLineComment();
     private:
         std::istream& program_;
-        std::size_t line_number_ = 1;
+        std::string file_name_;
+        std::size_t line_number_ = -1;
         std::size_t comments_ = 0;
 
         static const std::size_t MAX_STR_LENGTH_ = 1024;

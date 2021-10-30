@@ -4,6 +4,9 @@
 namespace parser {
     Program Parser::ParseProgram() {
         if (!HasNext()) ThrowError();
+        filename_ = GetNext().lexeme_;
+
+        if (!HasNext()) ThrowError();
         std::size_t line = iterator_->line_;
         std::vector<Class> classes;
         while (HasNext()) {

@@ -24,7 +24,7 @@ std::stringstream GetActual(const std::string& file_name) {
     }
 
     std::vector<Token> tokens;
-    auto lexer = lexer::Lexer(file);
+    auto lexer = lexer::Lexer(file, file_name);
     while (lexer.HasNext()) {
         tokens.push_back(lexer.Next());
     }
@@ -32,7 +32,7 @@ std::stringstream GetActual(const std::string& file_name) {
 
     std::stringstream actual_result;
     try {
-        parser::Program program = parser::Parser(tokens, file_name).ParseProgram();
+        parser::Program program = parser::Parser(tokens).ParseProgram();
         auto printer = parser::PrintVisitor();
         printer.VisitProgram(&program);
         actual_result << printer.GetResult() << std::endl;
