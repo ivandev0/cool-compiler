@@ -1,7 +1,6 @@
 #include "Lexer.h"
 #include <iostream>
 #include <fstream>
-#include <cassert>
 
 std::stringstream GetExpected(const std::string& lexer_path, const std::string& file_name) {
     std::system((lexer_path + " " + file_name + " > expected.txt").c_str());
@@ -20,16 +19,13 @@ std::stringstream GetActual(const std::string& file_name) {
         throw std::runtime_error("File " + file_name + " wasn't found");
     }
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
-
     std::stringstream actual_result;
-    auto lexer = lexer::Lexer(buffer.str());
+    auto lexer = lexer::Lexer(file);
     actual_result << "#name \"" << file_name << "\"" << std::endl;
     while (lexer.HasNext()) {
         actual_result << lexer.Next().ToString() << std::endl;
     }
+    file.close();
     return actual_result;
 }
 

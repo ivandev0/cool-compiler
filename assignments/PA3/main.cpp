@@ -23,15 +23,12 @@ std::stringstream GetActual(const std::string& file_name) {
         throw std::runtime_error("File " + file_name + " wasn't found");
     }
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
-
     std::vector<Token> tokens;
-    auto lexer = lexer::Lexer(buffer.str());
+    auto lexer = lexer::Lexer(file);
     while (lexer.HasNext()) {
         tokens.push_back(lexer.Next());
     }
+    file.close();
 
     std::stringstream actual_result;
     try {

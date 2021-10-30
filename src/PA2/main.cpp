@@ -15,15 +15,12 @@ int main(int argc, char** argv) {
     ifstream file(file_name);
 
     if (file.is_open()) {
-        stringstream buffer;
-        buffer << file.rdbuf();
-        file.close();
-
-        auto lexer = lexer::Lexer(buffer.str());
+        auto lexer = lexer::Lexer(file);
         cout << "#name " << std::filesystem::path(file_name).filename() << endl;
         while (lexer.HasNext()) {
             cout << lexer.Next().ToString() << endl;
         }
+        file.close();
     } else {
         cerr << "File " << file_name << " wasn't found" << endl;
         return 1;

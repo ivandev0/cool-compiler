@@ -24,8 +24,8 @@ Token lexer::Lexer::Next() {
     }
 
     while (!IsAtEnd()) {
-        auto c = Advance();
-        if (IsWhitespace(c)) continue;
+        auto c = Peek();
+        if (IsWhitespace(c)) { Advance(); continue; }
         switch (c) {
             case '{':
             case '}':
@@ -40,15 +40,18 @@ Token lexer::Lexer::Next() {
             case ',':
             case '@':
             case '~':
+                Advance();
                 return {std::string(1, c), line_number_};
 
             case '=':
+                Advance();
                 if (Match('>')) {
                     return {Token::Kind::DARROW, line_number_};
                 } else {
                     return {std::string(1, c), line_number_};
                 }
             case '*':
+                Advance();
                 if (Match(')')) {
                     return {Token::Kind::ERROR, "Unmatched *)", line_number_};
                 } else {
@@ -56,6 +59,7 @@ Token lexer::Lexer::Next() {
                 }
 
             case '<':
+                Advance();
                 if (Match('-')) {
                     return {Token::Kind::ASSIGN, line_number_};
                 } else if (Match('=')) {
@@ -70,6 +74,7 @@ Token lexer::Lexer::Next() {
                 } else if (IsAlpha(c)) {
                     return Identifier();
                 } else {
+                    Advance();
                     return {Token::Kind::ERROR, CharToStringRepresentation(c), line_number_};
                 }
         }
@@ -79,36 +84,41 @@ Token lexer::Lexer::Next() {
 }
 
 char lexer::Lexer::Advance() {
-    if (program_.at(offset_) == '\n') line_number_++;
-    return program_.at(offset_++);
+    if (program_.peek() == '\n') line_number_++;
+    return (char) program_.get();
 }
 
 char lexer::Lexer::Peek() {
     if (IsAtEnd()) return '\0';
-    return program_.at(offset_);
+    return (char) program_.peek();
 }
 
 char lexer::Lexer::PeekNext() {
-    if (offset_ + 1 >= program_.length()) return '\0';
-    return program_.at(offset_ + 1);
+    if (IsAtEnd()) return '\0';
+    program_.get();
+    if (IsAtEnd()) return '\0';
+    char c = (char) program_.peek();
+    program_.unget();
+    return c;
 }
 
 bool lexer::Lexer::Match(char expected) {
     if (IsAtEnd()) return false;
-    if (program_.at(offset_) != expected) return false;
+    if (program_.peek() != expected) return false;
 
     Advance();
     return true;
 }
 
 bool lexer::Lexer::IsAtEnd() {
-    return offset_ >= program_.length();
+    program_.peek(); // extra peek to set eof flag (?)
+    return program_.eof();
 }
 
 Token lexer::Lexer::String() {
     std::size_t size = 0;
     std::stringstream result;
-    result << '"';
+    result << Advance(); // get '"'
     char c;
     while ((c = Peek()) != '"' && !IsAtEnd()) {
         if (c == '\\') {
@@ -144,16 +154,17 @@ Token lexer::Lexer::String() {
 }
 
 Token lexer::Lexer::Number() {
-    auto begin = offset_ - 1;
-    while (IsDigit(Peek()) && !IsAtEnd()) Advance();
-    return {Token::Kind::INT_CONST, program_.substr(begin, offset_ - begin), line_number_};
+    std::vector<char> number;
+    while (IsDigit(Peek()) && !IsAtEnd()) number.push_back(Advance());
+    std::string number_str(number.begin(), number.end());
+    return {Token::Kind::INT_CONST, number_str, line_number_};
 }
 
 Token lexer::Lexer::Identifier() {
-    auto begin = offset_ - 1;
-    while (IsAlphaOdDigitOrUnderscore(Peek()) && !IsAtEnd()) Advance();
+    std::vector<char> id;
+    while (IsAlphaOdDigitOrUnderscore(Peek()) && !IsAtEnd()) id.push_back(Advance());
 
-    auto text = program_.substr(begin, offset_ - begin);
+    std::string text(id.begin(), id.end());
     // BOOL_CONST | OBJECTID | TYPEID | keyword
     Token::Kind type = GetKeywordType(text);
     if (type == Token::Kind::BOOL_CONST) {
