@@ -10,5 +10,7 @@ set (CMAKE_CXX_FLAGS_UBSAN "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fs
 enable_testing()
 add_subdirectory(assignments/PA2)
 add_subdirectory(assignments/PA3)
+add_subdirectory(assignments/PA4)
 add_subdirectory(src/PA2)
 add_subdirectory(src/PA3)
+add_subdirectory(src/PA4)
