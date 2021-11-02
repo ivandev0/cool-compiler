@@ -7,6 +7,11 @@
 #include "PrintVisitor.h"
 #include "SemanticAnalyzer.h"
 
+inline bool EndsWith(std::string const & value, std::string const & ending) {
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 std::stringstream GetExpected(const std::string& lexer_path, const std::string& parser_path, const std::string& semant_path, const std::string& file_name) {
     std::system((lexer_path + " " + file_name + " | " + parser_path + " | " + semant_path + " > expected.txt 2>&1").c_str());
     std::ifstream expected_file("expected.txt");
@@ -58,7 +63,7 @@ int main(int argc, char** argv) {
     std::string actual;
     std::string expect;
     while (std::getline(expected_result, expect, '\n') && std::getline(actual_result, actual, '\n')) {
-        if (actual == expect) {
+        if (EndsWith(expect, actual)) {
             std::cout << actual << std::endl;
         } else {
             std::cerr << "Lines are not equal." << std::endl;

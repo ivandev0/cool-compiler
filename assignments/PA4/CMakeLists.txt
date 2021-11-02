@@ -24,7 +24,7 @@ target_include_directories(semant_test PRIVATE ${SEMANT_HEADER_FILES})
 foreach(filename ${tests})
     get_filename_component(name ${filename} NAME_WE)
     add_test(
-            "test_${name}" semant_test
+            "test_semant_${name}" semant_test
             ${cool_compiler_SOURCE_DIR}/bin/lexer ${cool_compiler_SOURCE_DIR}/bin/parser ${cool_compiler_SOURCE_DIR}/bin/semant
             ${filename}
     )
