@@ -151,8 +151,8 @@ namespace parser {
     }
 
     Expression Parser::ParseComparisonExpression() {
-        std::size_t line = iterator_->line_;
         auto term = ParsePlusSubExpression();
+        std::size_t line = iterator_->line_;
 
         auto next = Peek();
         if (next.kind_ == Token::LE || next.lexeme_ == "<" || next.lexeme_ == "=") {
@@ -180,8 +180,8 @@ namespace parser {
     }
 
     Expression Parser::ParsePlusSubExpression() {
-        std::size_t line = iterator_->line_;
         auto term = ParseMulDivExpression();
+        std::size_t line = iterator_->line_;
 
         auto next = Peek();
         while (next.lexeme_ == "+" || next.lexeme_ == "-") {
@@ -206,8 +206,8 @@ namespace parser {
     }
 
     Expression Parser::ParseMulDivExpression() {
-        std::size_t line = iterator_->line_;
         auto term = ParseIsVoidExpression();
+        std::size_t line = iterator_->line_;
 
         auto next = Peek();
         while (next.lexeme_ == "*" || next.lexeme_ == "/") {

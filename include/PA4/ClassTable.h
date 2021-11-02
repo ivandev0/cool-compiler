@@ -14,31 +14,33 @@ namespace semant {
 
     class ClassTable {
     public:
-        explicit ClassTable(const std::vector<parser::Class>& classes) {
+        explicit ClassTable(const std::vector<parser::Class>& classes): classes_(classes) {
             for (const auto& node : basic_classes_) {
                 graph_[node.name] = node;
             }
 
             for (const auto& class_ : classes) {
+                if (IsBasicClass(class_.type) || class_.type == self_type) {
+                    throw std::runtime_error("Redefinition of basic class " + class_.type + ".");
+                }
+
                 if (graph_.find(class_.type) != graph_.end()) {
                     throw std::runtime_error("Class " + class_.type + " was previously defined.");
                 }
 
-                if (IsBasicClass(class_.type)) {
-                    throw std::runtime_error("Redefinition of basic class " + class_.type + ".");
-                }
                 graph_[class_.type] = {class_.type, class_.parent, {}};
             }
 
             for (const auto& class_ : classes) {
                 auto node = graph_[class_.type];
+
+                if (node.parent == self_type || IsBasicPrimitiveClass(node.parent)) {
+                    throw std::runtime_error("Class " + class_.type + " cannot inherit class " + node.parent + ".");
+                }
+
                 auto parentNode = graph_.find(node.parent);
                 if (parentNode == graph_.end()) {
                     throw std::runtime_error("Class " + class_.type + " inherits from an undefined class " + node.parent + ".");
-                }
-
-                if (node.parent != object_class_.type && node.parent != io_class_.type && IsBasicClass(node.parent)) {
-                    throw std::runtime_error("Class " + class_.type + " cannot inherit class " + node.parent + ".");
                 }
                 parentNode->second.children.push_back(node);
             }
@@ -92,6 +94,24 @@ namespace semant {
             }
 
             return last_common;
+        }
+
+        std::vector<parser::AttrFeature> GetAttributesOf(const std::string& type) {
+            if (type == object_class_.type || type == io_class_.type) return {};
+            auto klass = std::find_if(classes_.begin(), classes_.end(), [&type](const parser::Class& klass) { return type == klass.type; });
+
+            std::vector<parser::AttrFeature> attrs;
+            for (auto feature : klass->features) {
+                if (auto data = std::get_if<parser::AttrFeature>(&feature.feature)) {
+                    attrs.push_back(*data);
+                }
+            }
+            return attrs;
+        }
+
+        std::string GetParentOf(const std::string& type) {
+            auto node = graph_.at(type);
+            return node.parent;
         }
 
     private:
@@ -210,5 +230,6 @@ namespace semant {
         std::vector<Node> basic_classes_{object_, int_node_, bool_node_, string_node_, io_node_};
 
         std::map<std::string, Node> graph_;
+        std::vector<parser::Class> classes_;
     };
 }

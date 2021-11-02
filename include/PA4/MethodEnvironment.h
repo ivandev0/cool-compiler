@@ -13,6 +13,7 @@ namespace semant {
     };
 
     struct Signature {
+        std::vector<std::string> names;
         std::vector<std::string> types;
     };
 
@@ -70,14 +71,23 @@ namespace semant {
         }
 
         static Signature ToSignature(const parser::MethodFeature& feature) {
+            std::vector<std::string> names = FormalsToId(feature.params);
+            names.emplace_back("");
+
             std::vector<std::string> params = FormalsToTypes(feature.params);
             params.push_back(feature.return_type);
-            return {params};
+            return {names, params};
         }
 
         static std::vector<std::string> FormalsToTypes(std::vector<parser::Formal> formals) {
             std::vector<std::string> result;
             std::transform(formals.begin(), formals.end(), std::back_inserter(result), [](const parser::Formal& formal) { return formal.type; });
+            return result;
+        }
+
+        static std::vector<std::string> FormalsToId(std::vector<parser::Formal> formals) {
+            std::vector<std::string> result;
+            std::transform(formals.begin(), formals.end(), std::back_inserter(result), [](const parser::Formal& formal) { return formal.id.id; });
             return result;
         }
 
@@ -109,7 +119,7 @@ namespace semant {
                     std::string message;
                     message.append("In redefined method ").append(original_method.method_name).append(", ")
                             .append(param_message).append(param).append(" is different from original ")
-                            .append(type_message).append(original).append(".");
+                            .append(type_message).append(original);
                     throw std::runtime_error(message);
                 }
             }

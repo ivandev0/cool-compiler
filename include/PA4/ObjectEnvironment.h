@@ -33,7 +33,8 @@ namespace semant {
         }
 
         std::string GetType(const std::string& id) {
-            for (const auto& scope: stack_) {
+            for (std::size_t i = stack_.size(); i > 0; --i) {
+                const auto& scope = stack_[i - 1];
                 auto type = scope.find(id);
                 if (type != scope.end()) return type->second;
             }

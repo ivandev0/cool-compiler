@@ -20,9 +20,15 @@ namespace semant {
         }
 
         bool CheckAIsSubtypeOfB(const std::string& a, const std::string& b) const {
+            auto candidate = a;
             if (a == "_no_type" || (a == ClassTable::self_type && b == ClassTable::self_type)) return true;
 
-            return class_table_.CheckAIsSubtypeOfB(GetActualType(a), GetActualType(b));
+            if (a == ClassTable::self_type) {
+                if (b == ClassTable::self_type) return true;
+                candidate = self_type_;
+            }
+
+            return class_table_.CheckAIsSubtypeOfB(candidate, b);
         }
 
         bool IsDefined(const std::string& type) const {

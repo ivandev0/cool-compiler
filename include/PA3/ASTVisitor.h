@@ -9,14 +9,14 @@ namespace parser {
         virtual R VisitProgram(Program *program) = 0;
 
     protected:
-        R VisitFeature(Feature *feature) {
+        virtual R VisitFeature(Feature *feature) {
             if (auto data = std::get_if<AttrFeature>(&feature->feature)) return VisitAttrFeature(data);
             if (auto data = std::get_if<MethodFeature>(&feature->feature)) return VisitMethodFeature(data);
 
             throw std::runtime_error("Unsupported feature type");
 
         }
-        R VisitExpression(Expression *expr) {
+        virtual R VisitExpression(Expression *expr) {
             if (auto data = std::get_if<AssignExpression>(&(expr->data))) return VisitAssignExpression(data);
             if (auto data = std::get_if<StaticDispatchExpression>(&(expr->data))) return VisitStaticDispatchExpression(data);
             if (auto data = std::get_if<DispatchExpression>(&(expr->data))) return VisitDispatchExpression(data);

@@ -89,6 +89,7 @@ namespace parser {
             return true;
         }
 
+    public:
         static Expression CreateNoExpr() {
             return {{0}, NoExprExpression{}};
         }
