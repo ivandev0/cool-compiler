@@ -9,14 +9,14 @@ namespace semant {
     struct Node {
         std::string name;
         std::string parent;
-        std::vector<Node> children;
+        std::vector<std::shared_ptr<Node>> children;
     };
 
     class ClassTable {
     public:
         explicit ClassTable(const std::vector<parser::Class>& classes): classes_(classes) {
             for (const auto& node : basic_classes_) {
-                graph_[node.name] = node;
+                graph_[node.name] = std::make_shared<Node>(node);
             }
 
             for (const auto& class_ : classes) {
@@ -28,34 +28,37 @@ namespace semant {
                     throw std::runtime_error("Class " + class_.type + " was previously defined.");
                 }
 
-                graph_[class_.type] = {class_.type, class_.parent, {}};
+                graph_[class_.type] = std::make_shared<Node>(Node{class_.type, class_.parent, {}});
             }
 
             for (const auto& class_ : classes) {
                 auto node = graph_[class_.type];
 
-                if (node.parent == self_type || IsBasicPrimitiveClass(node.parent)) {
-                    throw std::runtime_error("Class " + class_.type + " cannot inherit class " + node.parent + ".");
+                if (node->parent == self_type || IsBasicPrimitiveClass(node->parent)) {
+                    throw std::runtime_error("Class " + class_.type + " cannot inherit class " + node->parent + ".");
                 }
 
-                auto parentNode = graph_.find(node.parent);
+                auto parentNode = graph_.find(node->parent);
                 if (parentNode == graph_.end()) {
-                    throw std::runtime_error("Class " + class_.type + " inherits from an undefined class " + node.parent + ".");
+                    throw std::runtime_error("Class " + class_.type + " inherits from an undefined class " + node->parent + ".");
                 }
-                parentNode->second.children.push_back(node);
+                parentNode->second->children.push_back(node);
             }
 
-            std::set<std::string> visited;
-            CheckForCyclicInheritance(object_, visited);
+            for (std::size_t i = classes_.size() - 1; i > 0; --i) {
+                auto node = graph_.at(classes_[i].type);
+                std::set<std::string> visited{node->name};
+                CheckForCyclicInheritance(node, visited);
+            }
         }
 
         bool CheckAIsSubtypeOfB(const std::string& a, const std::string& b) const {
             if (b == object_.name) return true;
 
             auto node = graph_.at(a);
-            while (node.name != object_.name) {
-                if (node.name == b) return true;
-                node = graph_.at(node.parent);
+            while (node->name != object_.name) {
+                if (node->name == b) return true;
+                node = graph_.at(node->parent);
             }
             return false;
         }
@@ -74,16 +77,16 @@ namespace semant {
             auto node2 = graph_.at(b);
 
             std::vector<std::string> inheritance1;
-            while (node1.name != object_.name) {
-                inheritance1.push_back(node1.name);
-                node1 = graph_.at(node1.parent);
+            while (node1->name != object_.name) {
+                inheritance1.push_back(node1->name);
+                node1 = graph_.at(node1->parent);
             }
             std::reverse(inheritance1.begin(), inheritance1.end());
 
             std::vector<std::string> inheritance2;
-            while (node2.name != object_.name) {
-                inheritance2.push_back(node2.name);
-                node2 = graph_.at(node2.parent);
+            while (node2->name != object_.name) {
+                inheritance2.push_back(node2->name);
+                node2 = graph_.at(node2->parent);
             }
             std::reverse(inheritance2.begin(), inheritance2.end());
 
@@ -111,7 +114,7 @@ namespace semant {
 
         std::string GetParentOf(const std::string& type) {
             auto node = graph_.at(type);
-            return node.parent;
+            return node->parent;
         }
 
     private:
@@ -120,11 +123,11 @@ namespace semant {
             return std::find_if(basic_classes_.begin(), basic_classes_.end(), predicate) != basic_classes_.end();
         }
 
-        void CheckForCyclicInheritance(const Node& node, std::set<std::string>& visited) {
-            for (const auto& child : node.children) {
-                auto result = visited.insert(child.name);
+        void CheckForCyclicInheritance(const std::shared_ptr<Node>& node, std::set<std::string>& visited) {
+            for (const auto& child : node->children) {
+                auto result = visited.insert(child->name);
                 if (!result.second) {
-                    throw std::runtime_error("Class " + child.name + ", or an ancestor of " + child.name + ", is involved in an inheritance cycle.");
+                    throw std::runtime_error("Class " + child->name + ", or an ancestor of " + child->name + ", is involved in an inheritance cycle.");
                 }
                 CheckForCyclicInheritance(child, visited);
                 visited.erase(result.first);
@@ -226,10 +229,10 @@ namespace semant {
         Node bool_node_{"Bool", "Object", {}};
         Node string_node_{"String", "Object", {}};
         Node io_node_{"IO", "Object", {}};
-        Node object_{"Object", "Object", {int_node_, bool_node_, string_node_, io_node_}};
+        Node object_{"Object", "Object", {std::make_shared<Node>(int_node_), std::make_shared<Node>(bool_node_), std::make_shared<Node>(string_node_), std::make_shared<Node>(io_node_)}};
         std::vector<Node> basic_classes_{object_, int_node_, bool_node_, string_node_, io_node_};
 
-        std::map<std::string, Node> graph_;
+        std::map<std::string, std::shared_ptr<Node>> graph_;
         std::vector<parser::Class> classes_;
     };
 }
