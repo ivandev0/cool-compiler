@@ -121,7 +121,7 @@ std::string semant::SemanticAnalyzer::VisitAssignExpression(parser::AssignExpres
             .append(" of identifier ").append(expr->id->id).append(".");
         throw std::runtime_error(message);
     }
-    expr->result_type = t;
+    expr->result_type = t_;
     return expr->result_type;
 }
 
