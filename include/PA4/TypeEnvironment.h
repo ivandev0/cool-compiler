@@ -43,14 +43,20 @@ namespace semant {
         std::string Combine(std::vector<std::string>& types) const {
             if (types.empty()) return class_table_.object_class_.type;
 
+            auto as_self_type = false;
             for (auto& type : types) {
-                if (type == ClassTable::self_type) type = self_type_;
+                if (type == ClassTable::self_type) {
+                    as_self_type = true;
+                    type = self_type_;
+                }
             }
 
             auto common = types[0];
             for (std::size_t i = 1; i < types.size(); ++i) {
                 common = class_table_.CommonSuperType(common, types[i]);
             }
+
+            if (as_self_type && common == self_type_) return ClassTable::self_type;
             return common;
         }
 
