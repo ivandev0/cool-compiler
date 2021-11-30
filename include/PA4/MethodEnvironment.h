@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <vector>
+#include "ClassTable.h"
 
 namespace semant {
     struct Method {

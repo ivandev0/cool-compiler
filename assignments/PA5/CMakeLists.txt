@@ -17,6 +17,7 @@ set(SEMANT_CPP_FILES
         ${cool_compiler_SOURCE_DIR}/src/PA4/SemanticAnalyzer.cpp
         ${cool_compiler_SOURCE_DIR}/src/PA5
         ${cool_compiler_SOURCE_DIR}/src/PA5/CoolBackend.cpp
+        ${cool_compiler_SOURCE_DIR}/src/PA5/AsmModule.cpp
 )
 
 file(GLOB tests "tests/*.test")

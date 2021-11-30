@@ -99,12 +99,21 @@ namespace semant {
             return last_common;
         }
 
-        std::vector<parser::AttrFeature> GetAttributesOf(const std::string& type) {
+        std::vector<parser::AttrFeature> GetAttributesOf(const std::string& type) const {
             if (type == object_class_.type || type == io_class_.type) return {};
-            auto klass = std::find_if(classes_.begin(), classes_.end(), [&type](const parser::Class& klass) { return type == klass.type; });
+            parser::Class klass;
+            if (type == int_class_.type) {
+                klass = int_class_;
+            } else if (type == str_class_.type) {
+                klass = str_class_;
+            } else if (type == bool_class_.type) {
+                klass = bool_class_;
+            } else {
+                klass = *std::find_if(classes_.begin(), classes_.end(), [&type](const parser::Class& klass) { return type == klass.type; });
+            }
 
             std::vector<parser::AttrFeature> attrs;
-            for (auto feature : klass->features) {
+            for (auto feature : klass.features) {
                 if (auto data = std::get_if<parser::AttrFeature>(&feature.feature)) {
                     attrs.push_back(*data);
                 }
@@ -112,11 +121,16 @@ namespace semant {
             return attrs;
         }
 
-        std::string GetParentOf(const std::string& type) {
+        std::string GetParentOf(const std::string& type) const {
             auto node = graph_.at(type);
             return node->parent;
         }
 
+        std::vector<parser::Class> GetDefinedClasses() const {
+            std::vector<parser::Class> result = {object_class_, int_class_, str_class_, bool_class_, io_class_};
+            result.insert(result.end(), classes_.begin(), classes_.end());
+            return result;
+        }
     private:
         bool IsBasicClass(const std::string& name) {
             auto predicate = [&name](const Node &n) { return n.name == name; };

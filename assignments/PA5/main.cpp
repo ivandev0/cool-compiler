@@ -46,12 +46,8 @@ std::stringstream GetActual(const std::string& spim_path, const std::string& fil
     semant::SemanticAnalyzer analyzer;
     analyzer.Analyze(&program);
 
-    std::stringstream spim_program;
-    backend::CoolBackend converter(spim_program);
-    converter.Convert(program);
-
     std::ofstream spim_file(file_name + ".s");
-    spim_file << spim_program.str();
+    spim_file << backend::CoolBackend::Convert(analyzer.GetTypeEnvironment());
     spim_file.close();
 
     return RunSpim(spim_path, file_name + ".s");

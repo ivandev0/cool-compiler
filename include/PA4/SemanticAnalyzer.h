@@ -8,6 +8,7 @@ namespace semant {
     class SemanticAnalyzer : private parser::ASTVisitor<std::string> {
     public:
         void Analyze(parser::Program* program);
+        TypeEnvironment& GetTypeEnvironment() { return *env_; }
 
         virtual ~SemanticAnalyzer() {
             delete env_;

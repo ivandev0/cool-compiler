@@ -16,6 +16,7 @@ set(SEMANT_CPP_FILES
         ${cool_compiler_SOURCE_DIR}/src/PA5
         ${cool_compiler_SOURCE_DIR}/src/PA5/main.cpp
         ${cool_compiler_SOURCE_DIR}/src/PA5/CoolBackend.cpp
+        ${cool_compiler_SOURCE_DIR}/src/PA5/AsmModule.cpp
 )
 
 add_executable(cool_bin ${SEMANT_CPP_FILES})

@@ -31,11 +31,7 @@ int main(int argc, char **argv) {
         semant::SemanticAnalyzer analyzer;
         analyzer.Analyze(&program);
 
-        std::stringstream spim_program;
-        backend::CoolBackend converter(spim_program);
-        converter.Convert(program);
-
-        cout << spim_program.str() << endl;
+        cout << backend::CoolBackend::Convert(analyzer.GetTypeEnvironment()) << endl;
     } else {
         cerr << "File " << file_name << " wasn't found" << endl;
         return 1;
