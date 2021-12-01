@@ -127,7 +127,7 @@ namespace semant {
         }
 
         std::vector<parser::Class> GetDefinedClasses() const {
-            std::vector<parser::Class> result = {object_class_, int_class_, str_class_, bool_class_, io_class_};
+            std::vector<parser::Class> result = {object_class_, io_class_, int_class_, bool_class_, str_class_};
             result.insert(result.end(), classes_.begin(), classes_.end());
             return result;
         }

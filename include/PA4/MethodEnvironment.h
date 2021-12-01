@@ -7,6 +7,7 @@ namespace semant {
     struct Method {
         std::string class_name;
         std::string method_name;
+        std::string original_type;
 
         bool operator<(const Method& other) const {
             return std::tie(class_name, method_name) < std::tie(other.class_name, other.method_name);
@@ -44,6 +45,20 @@ namespace semant {
             return &sig->second;
         }
 
+        std::vector<Method> GetMethodsFor(const std::string& type) const {
+            std::vector<Method> methods;
+            std::transform(method_to_signature_.begin(), method_to_signature_.end(), std::back_inserter(methods), [](const auto& method) {
+                return method.first;
+            });
+
+            std::vector<Method> result;
+            std::copy_if(methods.begin(), methods.end(), std::back_inserter(result), [&type](const auto& method) {
+                return method.class_name == type;
+            });
+
+            return result;
+        }
+
     private:
         static void AddToMap(
             const parser::Class& class_,
@@ -66,7 +81,7 @@ namespace semant {
                     if (method != method_to_signature.end()) {
                         CheckAllParamsMatchOriginal(*data, method->first, method->second);
                     }
-                    method_to_signature[{self_type, data->id.id}] = ToSignature(*data);
+                    method_to_signature[{self_type, data->id.id, class_.type}] = ToSignature(*data);
                 }
             }
         }

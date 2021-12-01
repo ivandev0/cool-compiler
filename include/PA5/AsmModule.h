@@ -7,7 +7,7 @@
 #include "Const.h"
 
 namespace backend {
-    class Prototype {
+    struct Prototype {
     public:
         Prototype(std::string name, std::size_t tag, std::vector<std::string> types) :
             name(std::move(name)), tag(tag), types(std::move(types)) {}
@@ -20,8 +20,14 @@ namespace backend {
         std::vector<std::string> types;
     };
 
-    class DispatchTable {
+    struct DispatchTable {
+        DispatchTable(std::string name, std::vector<std::pair<std::string, std::string>> methods) :
+            name(std::move(name)), methods(std::move(methods)) {}
+
         std::string ToData() const;
+    private:
+        std::string name;
+        std::vector<std::pair<std::string, std::string>> methods;
     };
 
     class AsmModule: private parser::ASTVisitor<void> {
@@ -42,6 +48,10 @@ namespace backend {
             }
             result << SetUpConsts() << "\n";
             result << SetUpClassNameTable() << "\n";
+            result << SetUpClassObjectTable() << "\n";
+            for (const auto &item : dispatch_tables_) {
+                result << item.ToData() << "\n";
+            }
             return result.str();
         }
 
@@ -84,8 +94,13 @@ namespace backend {
             prototypes_.emplace_back(name, GetNextTag(), types);
         }
 
-        void BuildDispatchTable(const std::string& name) {
-
+        void BuildDispatchTable(const std::string& type) {
+            auto methods = type_env_.method_env_.GetMethodsFor(type);
+            std::vector<std::pair<std::string, std::string>> names;
+            transform(methods.begin(), methods.end(), back_inserter(names), [](const auto& method) {
+                return std::make_pair(method.original_type, method.method_name);
+            });
+            dispatch_tables_.emplace_back(type, names);
         }
 
         std::size_t GetTagFor(const std::string& type) {
@@ -147,7 +162,20 @@ namespace backend {
         std::string SetUpClassNameTable() {
             std::stringstream result;
             result << "\t.globl\tclass_nameTab\n";
-            // TODO
+            result << "class_nameTab:\n";
+            for (const auto &item : prototypes_) {
+                result << "\t.word\t" << GetOrCreateConstFor(item.GetName()) << "\n";
+            }
+            return result.str();
+        }
+
+        std::string SetUpClassObjectTable() {
+            std::stringstream result;
+            result << "class_objTab:\n";
+            for (const auto &item : prototypes_) {
+                result << "\t.word\t" << item.GetName() << "_protObj\n";
+                result << "\t.word\t" << item.GetName() << "_init\n";
+            }
             return result.str();
         }
 

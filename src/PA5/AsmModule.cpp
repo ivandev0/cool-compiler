@@ -1,18 +1,21 @@
 #include "AsmModule.h"
 
 void backend::AsmModule::VisitProgram(parser::Program *program) {
+    GetOrCreateConstFor((std::string) "");
+    GetOrCreateConstFor((std::size_t) 0);
+    GetOrCreateConstFor(false);
+    GetOrCreateConstFor(true);
+
     auto defined_classes = type_env_.class_table_.GetDefinedClasses();
+    for (const auto &item : defined_classes) {
+        GetOrCreateConstFor(item.type);
+    }
     for (auto klass: defined_classes) {
         VisitClass(&klass);
     }
 }
 
 void backend::AsmModule::VisitClass(parser::Class *klass) {
-    GetOrCreateConstFor("");
-    GetOrCreateConstFor((std::size_t) 0);
-    GetOrCreateConstFor(false);
-    GetOrCreateConstFor(true);
-
     BuildPrototype(klass->type);
     BuildDispatchTable(klass->type);
     // BuildInit()
@@ -40,6 +43,15 @@ std::string backend::Prototype::ToData() const {
             attr = "0";
         }
         result << "\t.word\t" << attr << "\n";
+    }
+    return result.str();
+}
+
+std::string backend::DispatchTable::ToData() const {
+    std::stringstream result;
+    result << name << "_dispTab:\n";
+    for (const auto &item : methods) {
+        result << "\t.word\t" << item.first << "." << item.second << "\n";
     }
     return result.str();
 }
