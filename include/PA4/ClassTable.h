@@ -72,6 +72,11 @@ namespace semant {
             return name == int_class_.type || name == bool_class_.type || name == str_class_.type;
         }
 
+        bool IsBasicClass(const std::string& name) const {
+            auto predicate = [&name](const Node &n) { return n.name == name; };
+            return std::find_if(basic_classes_.begin(), basic_classes_.end(), predicate) != basic_classes_.end();
+        }
+
         std::string CommonSuperType(const std::string& a, const std::string& b) const {
             auto node1 = graph_.at(a);
             auto node2 = graph_.at(b);
@@ -132,11 +137,6 @@ namespace semant {
             return result;
         }
     private:
-        bool IsBasicClass(const std::string& name) {
-            auto predicate = [&name](const Node &n) { return n.name == name; };
-            return std::find_if(basic_classes_.begin(), basic_classes_.end(), predicate) != basic_classes_.end();
-        }
-
         void CheckForCyclicInheritance(const std::shared_ptr<Node>& node, std::set<std::string>& visited) {
             for (const auto& child : node->children) {
                 auto result = visited.insert(child->name);

@@ -11,7 +11,7 @@ namespace backend {
         std::size_t GetTag() const { return tag; }
 
         void Serialize(MIPS* mips) const override {
-            mips->global(name + "protObj")
+            mips->global(name + "_protObj")
                 ->word("-1")
                 ->label(name + "_protObj")
                 ->word(tag)

@@ -17,7 +17,7 @@ namespace backend {
         void Serialize(MIPS* mips) const override {
             mips->word("-1")
                 ->label("int_const" + std::to_string(val))
-                ->label(std::to_string(int_tag))
+                ->word(std::to_string(int_tag))
                 ->word(4)
                 ->word("Int_dispTab")
                 ->word(val);
@@ -39,7 +39,7 @@ namespace backend {
             mips->global("bool_const" + std::to_string(val))
                 ->word("-1")
                 ->label("bool_const" + std::to_string(val))
-                ->label(std::to_string(bool_tag))
+                ->word(std::to_string(bool_tag))
                 ->word(4)
                 ->word("Bool_dispTab")
                 ->word(val);

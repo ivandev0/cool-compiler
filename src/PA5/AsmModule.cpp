@@ -18,7 +18,22 @@ void backend::AsmModule::VisitProgram(parser::Program *program) {
 void backend::AsmModule::VisitClass(parser::Class *klass) {
     BuildPrototype(klass->type);
     BuildDispatchTable(klass->type);
-    // BuildInit()
-    // for each method -> build
+    mips->SetHeapMode();
+    BuildInit(*klass);
+    if (!type_env_.class_table_.IsBasicClass(klass->type)) {
+        for (auto feature: klass->features) {
+            VisitFeature(&feature);
+        }
+    }
 }
 
+void backend::AsmModule::VisitAttrFeature(parser::AttrFeature *attrFeature) {
+    // nothing
+}
+
+void backend::AsmModule::VisitMethodFeature(parser::MethodFeature *methodFeature) {
+    mips->label("Main." + methodFeature->id.id)->prolog(0);
+    // TODO
+    mips->la("$a0", "int_const0");
+    mips->epilog(0);
+}

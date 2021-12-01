@@ -11,14 +11,22 @@
 namespace backend {
     class AsmModule: private parser::ASTVisitor<void> {
     public:
-        explicit AsmModule(const semant::TypeEnvironment &typeEnv) : type_env_(typeEnv) {}
+        explicit AsmModule(const semant::TypeEnvironment &typeEnv) : type_env_(typeEnv) {
+            mips->SetDataMode();
+            mips->data()->align(2);
+
+            mips->SetHeapMode();
+            mips->global("heap_start")->label("heap_start")->word(0)->text()
+                ->global("Int_init")->global("String_init")->global("Bool_init")
+                ->global("Main_init")->global("Main.main");
+        }
 
         void VisitProgram(parser::Program *program) override;
 
         std::size_t GetNextTag() { return tag++; }
 
-        std::string ToData() {
-            mips->data()->align(2);
+        std::string End() {
+            mips->SetDataMode();
             SetUpBasicTags();
             ConfigureGC();
             for (const auto &item : prototypes_) {
@@ -31,7 +39,7 @@ namespace backend {
                 item.Serialize(mips);
             }
 
-            mips->global("heap_start")->label("heap_start")->word(0)->text();
+            mips->SetHeapMode();
             return mips->End();
         }
 
@@ -83,6 +91,18 @@ namespace backend {
             dispatch_tables_.emplace_back(type, names);
         }
 
+        void BuildInit(const parser::Class& klass) {
+            mips->label(klass.type + "_init")->prolog(0);
+            if (klass.type != "Object") {
+                mips->jal(klass.parent + "_init");
+                if (!type_env_.class_table_.IsBasicClass(klass.type)) {
+                    // TODO: load attrs
+                }
+                mips->move("$a0", "$s0");
+            }
+            mips->epilog(0);
+        }
+
         std::size_t GetTagFor(const std::string& type) {
             for (const auto &item : prototypes_) {
                 if (item.GetName() == type) {
@@ -94,9 +114,9 @@ namespace backend {
 
         void SetUpBasicTags() {
             mips->global("_int_tag")->global("_bool_tag")->global("_string_tag")
-                ->label("_int_tag:")->word(GetTagFor("Int"))
-                ->label("_bool_tag:")->word(GetTagFor("Bool"))
-                ->label("_string_tag:")->word(GetTagFor("String"));
+                ->label("_int_tag")->word(GetTagFor("Int"))
+                ->label("_bool_tag")->word(GetTagFor("Bool"))
+                ->label("_string_tag")->word(GetTagFor("String"));
         }
 
         void ConfigureGC() {
@@ -118,7 +138,7 @@ namespace backend {
         }
 
         void SetUpClassNameTable() {
-            mips->global("class_nameTab")->label("class_nameTab:");
+            mips->global("class_nameTab")->label("class_nameTab");
             for (const auto &item : prototypes_) {
                 mips->word(GetOrCreateConstFor(item.GetName()));
             }
@@ -133,8 +153,8 @@ namespace backend {
 
     private:
         void VisitClass(parser::Class *klass) override;
-        void VisitAttrFeature(parser::AttrFeature *attrFeature) override {}
-        void VisitMethodFeature(parser::MethodFeature *methodFeature) override {};
+        void VisitAttrFeature(parser::AttrFeature *attrFeature) override;
+        void VisitMethodFeature(parser::MethodFeature *methodFeature) override;
         void VisitFormal(parser::Formal *formal) override {};
         void VisitAssignExpression(parser::AssignExpression *expr) override {};
         void VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) override {};
