@@ -5,31 +5,10 @@
 #include "TypeEnvironment.h"
 #include "ASTVisitor.h"
 #include "Const.h"
+#include "MIPS.h"
+#include "Tables.h"
 
 namespace backend {
-    struct Prototype {
-    public:
-        Prototype(std::string name, std::size_t tag, std::vector<std::string> types) :
-            name(std::move(name)), tag(tag), types(std::move(types)) {}
-        std::string ToData() const;
-        std::string GetName() const { return name; }
-        std::size_t GetTag() const { return tag; }
-    private:
-        std::string name;
-        std::size_t tag;
-        std::vector<std::string> types;
-    };
-
-    struct DispatchTable {
-        DispatchTable(std::string name, std::vector<std::pair<std::string, std::string>> methods) :
-            name(std::move(name)), methods(std::move(methods)) {}
-
-        std::string ToData() const;
-    private:
-        std::string name;
-        std::vector<std::pair<std::string, std::string>> methods;
-    };
-
     class AsmModule: private parser::ASTVisitor<void> {
     public:
         explicit AsmModule(const semant::TypeEnvironment &typeEnv) : type_env_(typeEnv) {}
@@ -39,20 +18,21 @@ namespace backend {
         std::size_t GetNextTag() { return tag++; }
 
         std::string ToData() {
-            std::stringstream result;
-            result << "\t.data\n" << "\t.align\t2\n";
-            result << SetUpBasicTags() << "\n";
-            result << ConfigureGC() << "\n";
+            mips->data()->align(2);
+            SetUpBasicTags();
+            ConfigureGC();
             for (const auto &item : prototypes_) {
-                result << item.ToData() << "\n";
+                item.Serialize(mips);
             }
-            result << SetUpConsts() << "\n";
-            result << SetUpClassNameTable() << "\n";
-            result << SetUpClassObjectTable() << "\n";
+            SetUpConsts();
+            SetUpClassNameTable();
+            SetUpClassObjectTable();
             for (const auto &item : dispatch_tables_) {
-                result << item.ToData() << "\n";
+                item.Serialize(mips);
             }
-            return result.str();
+
+            mips->global("heap_start")->label("heap_start")->word(0)->text();
+            return mips->End();
         }
 
     public:
@@ -112,71 +92,43 @@ namespace backend {
             return 0; // TODO: maybe throw exception
         }
 
-        std::string SetUpBasicTags() {
-            std::stringstream result;
-            result << "\t.globl\t_int_tag\n";
-            result << "\t.globl\t_bool_tag\n";
-            result << "\t.globl\t_string_tag\n";
-
-            result << "_int_tag:\n";
-            result << "\t.word\t" << GetTagFor("Int") << "\n";
-
-            result << "_bool_tag:\n";
-            result << "\t.word\t" << GetTagFor("Bool") << "\n";
-
-            result << "_string_tag:\n";
-            result << "\t.word\t" << GetTagFor("String") << "\n";
-            return result.str();
+        void SetUpBasicTags() {
+            mips->global("_int_tag")->global("_bool_tag")->global("_string_tag")
+                ->label("_int_tag:")->word(GetTagFor("Int"))
+                ->label("_bool_tag:")->word(GetTagFor("Bool"))
+                ->label("_string_tag:")->word(GetTagFor("String"));
         }
 
-        std::string ConfigureGC() {
-            std::stringstream result;
-            result << "\t.globl\t_MemMgr_INITIALIZER\n";
-            result << "_MemMgr_INITIALIZER:\n";
-            result << "\t.word\t_NoGC_Init\n";
-
-            result << "\t.globl\t_MemMgr_COLLECTOR\n";
-            result << "_MemMgr_COLLECTOR:\n";
-            result << "\t.word\t_NoGC_Collect\n";
-
-            result << "\t.globl\t_MemMgr_TEST\n";
-            result << "_MemMgr_TEST:\n";
-            result << "\t.word\t0";
-            return result.str();
+        void ConfigureGC() {
+            mips->global("_MemMgr_INITIALIZER")->label("_MemMgr_INITIALIZER")->word("_NoGC_Init")
+                ->global("_MemMgr_COLLECTOR")->label("_MemMgr_COLLECTOR")->word("_NoGC_Collect")
+                ->global("_MemMgr_TEST")->label("_MemMgr_TEST")->word("0");
         }
 
-        std::string SetUpConsts() {
-            std::stringstream result;
+        void SetUpConsts() {
             for (const auto &item : int_constants_) {
-                result << item.ToData() << "\n";
+                item.Serialize(mips);
             }
             for (const auto &item : bool_constants_) {
-                result << item.ToData() << "\n";
+                item.Serialize(mips);
             }
             for (const auto &item : str_constants_) {
-                result << item.ToData() << "\n";
+                item.Serialize(mips);
             }
-            return result.str();
         }
 
-        std::string SetUpClassNameTable() {
-            std::stringstream result;
-            result << "\t.globl\tclass_nameTab\n";
-            result << "class_nameTab:\n";
+        void SetUpClassNameTable() {
+            mips->global("class_nameTab")->label("class_nameTab:");
             for (const auto &item : prototypes_) {
-                result << "\t.word\t" << GetOrCreateConstFor(item.GetName()) << "\n";
+                mips->word(GetOrCreateConstFor(item.GetName()));
             }
-            return result.str();
         }
 
-        std::string SetUpClassObjectTable() {
-            std::stringstream result;
-            result << "class_objTab:\n";
+        void SetUpClassObjectTable() {
+            mips->label("class_objTab");
             for (const auto &item : prototypes_) {
-                result << "\t.word\t" << item.GetName() << "_protObj\n";
-                result << "\t.word\t" << item.GetName() << "_init\n";
+                mips->word(item.GetName() + "_protObj")->word(item.GetName() + "_init");
             }
-            return result.str();
         }
 
     private:
@@ -211,7 +163,13 @@ namespace backend {
         void VisitNoExprExpression(parser::NoExprExpression *expr) override {};
         void VisitCaseBranchExpression(parser::CaseBranchExpression *expr) override {};
 
+    public:
+        virtual ~AsmModule() {
+            delete mips;
+        }
+
     private:
+        MIPS* mips = new MIPS();
         const semant::TypeEnvironment& type_env_;
         std::vector<IntConst> int_constants_;
         std::vector<BoolConst> bool_constants_;

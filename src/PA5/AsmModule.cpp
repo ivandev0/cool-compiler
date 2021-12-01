@@ -22,37 +22,3 @@ void backend::AsmModule::VisitClass(parser::Class *klass) {
     // for each method -> build
 }
 
-std::string backend::Prototype::ToData() const {
-    std::stringstream result;
-    result << "\t.globl\t" << name << "_protObj\n";
-    result << "\t.word\t-1\n";
-    result << name << "_protObj:\n";
-    result << "\t.word\t" << tag << "\n";
-    result << "\t.word\t" << types.size() + 3 << "\n";
-    result << "\t.word\t" << name << "_dispTab\n";
-
-    for (const auto &type : types) {
-        std::string attr;
-        if (type == "String" && name != "String") {
-            attr = "str_const0";
-        } else if (type == "Int" && name != "Int") {
-            attr = "int_const0";
-        } else if (type == "Bool" && name != "Bool") {
-            attr = "bool_const0";
-        } else {
-            attr = "0";
-        }
-        result << "\t.word\t" << attr << "\n";
-    }
-    return result.str();
-}
-
-std::string backend::DispatchTable::ToData() const {
-    std::stringstream result;
-    result << name << "_dispTab:\n";
-    for (const auto &item : methods) {
-        result << "\t.word\t" << item.first << "." << item.second << "\n";
-    }
-    return result.str();
-}
-
