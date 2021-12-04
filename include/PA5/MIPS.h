@@ -131,6 +131,12 @@ namespace backend {
             return this;
         }
 
+        MIPS* genGc() {
+            addiu(R::a1, R::s0, 12);
+            jal("_GenGC_Assign");
+            return this;
+        }
+
         MIPS* bne(const Reg& r1, const Reg& r2, const std::string& label) {
             heap_ << "\tbne\t" << r1 << " " << r2 << " " << label << "\n";
             return this;

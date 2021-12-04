@@ -37,7 +37,27 @@ void backend::AsmModule::VisitMethodFeature(parser::MethodFeature *methodFeature
     mips->epilog(0);
 }
 
-void backend::AsmModule::VisitAssignExpression(parser::AssignExpression *expr) {  }
+void backend::AsmModule::VisitAssignExpression(parser::AssignExpression *expr) {
+    VisitExpression(&*expr->expr);
+
+    auto local_offset = context.GetPositionForLocal(expr->id->id);
+    auto formal_offset = context.GetOffsetForFormal(expr->id->id);
+    auto attr_offset = context.GetOffsetForAttr(expr->id->id);
+
+    if (local_offset != -1) {
+        mips->sw(R::acc, R::fp.Shift(-4 * local_offset));
+        return;
+    }
+    if (formal_offset != -1) {
+        mips->sw(R::acc, R::fp.Shift(formal_offset));
+        return;
+    }
+    if (attr_offset != -1) {
+        mips->sw(R::acc, R::s0.Shift(attr_offset))->genGc();
+        return;
+    }
+}
+
 void backend::AsmModule::VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) {  }
 
 void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *expr) {
@@ -65,7 +85,13 @@ void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *exp
 
 void backend::AsmModule::VisitIfExpression(parser::IfExpression *expr) {  }
 void backend::AsmModule::VisitWhileExpression(parser::WhileExpression *expr) {  }
-void backend::AsmModule::VisitBlockExpression(parser::BlockExpression *expr) {  }
+
+void backend::AsmModule::VisitBlockExpression(parser::BlockExpression *expr) {
+    for (const auto &item : expr->list) {
+        VisitExpression(&*item);
+    }
+}
+
 void backend::AsmModule::VisitLetExpression(parser::LetExpression *expr) {  }
 void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) {  }
 void backend::AsmModule::VisitCaseBranchExpression(parser::CaseBranchExpression *expr) {  }
@@ -101,7 +127,7 @@ void backend::AsmModule::VisitIdExpression(parser::IdExpression *expr) {
     auto attr_offset = context.GetOffsetForAttr(expr->id);
 
     if (local_offset != -1) {
-        mips->lw(R::acc, R::fp.Shift(4 * local_offset));
+        mips->lw(R::acc, R::fp.Shift(-4 * local_offset));
         return;
     }
     if (formal_offset != -1) {

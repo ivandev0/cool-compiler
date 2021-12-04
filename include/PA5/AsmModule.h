@@ -125,9 +125,9 @@ namespace backend {
         }
 
         void ConfigureGC() {
-            mips->global("_MemMgr_INITIALIZER")->label("_MemMgr_INITIALIZER")->word("_NoGC_Init")
-                ->global("_MemMgr_COLLECTOR")->label("_MemMgr_COLLECTOR")->word("_NoGC_Collect")
-                ->global("_MemMgr_TEST")->label("_MemMgr_TEST")->word("0");
+            mips->global("_MemMgr_INITIALIZER")->label("_MemMgr_INITIALIZER")->word(gc_enabled_ ? "_GenGC_Init" : "_NoGC_Init")
+                ->global("_MemMgr_COLLECTOR")->label("_MemMgr_COLLECTOR")->word(gc_enabled_ ? "_GenGC_Collect" : "_NoGC_Collect")
+                ->global("_MemMgr_TEST")->label("_MemMgr_TEST")->word(gc_test_enabled_ ? "1" : "0");
         }
 
         void SetUpConsts() {
@@ -210,6 +210,10 @@ namespace backend {
         MIPS* mips = new MIPS();
         const semant::TypeEnvironment& type_env_;
         Context context;
+
+        bool gc_enabled_ = true;
+        bool gc_test_enabled_ = true;
+
         std::vector<IntConst> int_constants_;
         std::vector<BoolConst> bool_constants_;
         std::vector<StrConst> str_constants_;
