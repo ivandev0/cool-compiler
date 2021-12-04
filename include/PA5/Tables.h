@@ -41,6 +41,19 @@ namespace backend {
         DispatchTable(std::string name, std::vector<std::pair<std::string, std::string>> methods) :
                 name(std::move(name)), methods(std::move(methods)) {}
 
+        bool IsFor(const std::string& class_name) const {
+            return class_name == this->name;
+        }
+
+        std::size_t GetMethodOffset(const std::string& method_name) const {
+            for (std::size_t i = 0; i < methods.size(); ++i) {
+                if (methods[i].second == method_name) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         void Serialize(MIPS* mips) const override {
             mips->label(name + "_dispTab");
             for (const auto &item : methods) {

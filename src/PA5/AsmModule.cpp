@@ -19,8 +19,7 @@ void backend::AsmModule::VisitClass(parser::Class *klass) {
     BuildPrototype(klass->type);
     BuildDispatchTable(klass->type);
     mips->SetHeapMode();
-    context.SetClassName(klass->type);
-    context.AddAttrs(type_env_.class_table_.GetAllAttributesOf(klass->type));
+    context.EnterClass(*klass);
     BuildInit(*klass);
     if (!type_env_.class_table_.IsBasicClass(klass->type)) {
         for (auto feature: klass->features) {
@@ -40,7 +39,30 @@ void backend::AsmModule::VisitMethodFeature(parser::MethodFeature *methodFeature
 
 void backend::AsmModule::VisitAssignExpression(parser::AssignExpression *expr) {  }
 void backend::AsmModule::VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) {  }
-void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *expr) {  }
+
+void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *expr) {
+    for (const auto &arg : expr->list) {
+        VisitExpression(&*arg);
+        mips->push(R::acc);
+        context.AddLocalId("");
+    }
+
+    VisitExpression(&*expr->expr);
+
+    auto dispatchLabel = NextLabel();
+    mips->bne(R::acc, R::zero, dispatchLabel)
+        ->la(R::acc, GetOrCreateConstFor(context.GetFileName()))
+        ->li(R::t1, expr->line_number)
+        ->jal("_dispatch_abort")
+        ->label(dispatchLabel);
+
+    auto target = expr->expr->result_type == semant::ClassTable::self_type ? context.GetSelfType() : expr->expr->result_type;
+    auto offset = GetMethodOffset(target, expr->id->id);
+    mips->lw(R::t1, R::acc.Shift(8))            // get dispatch table
+        ->lw(R::t1, R::t1.Shift(offset * 4))    // get method address
+        ->jalr(R::t1);
+}
+
 void backend::AsmModule::VisitIfExpression(parser::IfExpression *expr) {  }
 void backend::AsmModule::VisitWhileExpression(parser::WhileExpression *expr) {  }
 void backend::AsmModule::VisitBlockExpression(parser::BlockExpression *expr) {  }
@@ -65,11 +87,34 @@ void backend::AsmModule::VisitIntExpression(parser::IntExpression *expr) {
 }
 
 void backend::AsmModule::VisitStringExpression(parser::StringExpression *expr) {
-    mips->la(R::acc, GetOrCreateConstFor(expr->value));
+    auto value_without_quotes = expr->value.substr(1, expr->value.size() - 2);
+    mips->la(R::acc, GetOrCreateConstFor(value_without_quotes));
 }
+
 void backend::AsmModule::VisitBoolExpression(parser::BoolExpression *expr) {
     mips->la(R::acc, GetOrCreateConstFor(expr->value));
 }
 
-void backend::AsmModule::VisitIdExpression(parser::IdExpression *expr) {  }
-void backend::AsmModule::VisitNoExprExpression(parser::NoExprExpression *expr) {  }
+void backend::AsmModule::VisitIdExpression(parser::IdExpression *expr) {
+    auto local_offset = context.GetPositionForLocal(expr->id);
+    auto formal_offset = context.GetOffsetForFormal(expr->id);
+    auto attr_offset = context.GetOffsetForAttr(expr->id);
+
+    if (local_offset != -1) {
+        mips->lw(R::acc, R::fp.Shift(4 * local_offset));
+        return;
+    }
+    if (formal_offset != -1) {
+        mips->lw(R::acc, R::fp.Shift(formal_offset));
+        return;
+    }
+    if (attr_offset != -1) {
+        mips->lw(R::acc, R::s0.Shift(attr_offset));
+        return;
+    }
+    mips->move(R::acc, R::s0); // self
+}
+
+void backend::AsmModule::VisitNoExprExpression(parser::NoExprExpression *expr) {
+    mips->move(R::acc, R::zero);
+}

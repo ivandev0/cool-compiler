@@ -12,7 +12,7 @@
 namespace backend {
     class AsmModule: private parser::ASTVisitor<void> {
     public:
-        explicit AsmModule(const semant::TypeEnvironment &typeEnv) : type_env_(typeEnv) {
+        explicit AsmModule(const semant::TypeEnvironment &type_env) : type_env_(type_env), context(Context(type_env)) {
             mips->SetDataMode();
             mips->data()->align(2);
 
@@ -160,6 +160,15 @@ namespace backend {
             return prefix + "_label_" + std::to_string(label_index_++);
         }
 
+        std::size_t GetMethodOffset(const std::string& klass, const std::string& method) {
+            for (const auto &table : dispatch_tables_) {
+                if (table.IsFor(klass)) {
+                    return table.GetMethodOffset(method);
+                }
+            }
+            return -1;
+        }
+
     private:
         void VisitClass(parser::Class *klass) override;
         void VisitAttrFeature(parser::AttrFeature *attrFeature) override { /*nothing*/ };
@@ -199,8 +208,8 @@ namespace backend {
 
     private:
         MIPS* mips = new MIPS();
-        Context context;
         const semant::TypeEnvironment& type_env_;
+        Context context;
         std::vector<IntConst> int_constants_;
         std::vector<BoolConst> bool_constants_;
         std::vector<StrConst> str_constants_;

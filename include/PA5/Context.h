@@ -2,23 +2,11 @@
 namespace backend {
     class Context {
     public:
-        void SetClassName(const std::string& name) {
-            class_name_ = name;
-        }
+        explicit Context(const semant::TypeEnvironment &typeEnv) : type_env_(typeEnv) {}
 
-        void EnterScope() {
-            local_to_offset.emplace_back();
-        }
-
-        void ExitScope() {
-            local_to_offset.pop_back();
-        }
-
-        void AddAttrs(const std::vector<parser::AttrFeature>& attrs) {
-            attr_to_offset.clear();
-            for (const auto& attr: attrs) {
-                attr_to_offset[attr.id.id] = 12 + 4 * attr_to_offset.size();
-            }
+        void EnterClass(const parser::Class& klass) {
+            current_class_ = klass;
+            AddAttrs(type_env_.class_table_.GetAllAttributesOf(klass.type));
         }
 
         void EnterMethod(const parser::MethodFeature& method) {
@@ -29,8 +17,15 @@ namespace backend {
             }
         }
 
+        void AddAttrs(const std::vector<parser::AttrFeature>& attrs) {
+            attr_to_offset.clear();
+            for (const auto& attr: attrs) {
+                attr_to_offset[attr.id.id] = 12 + 4 * attr_to_offset.size();
+            }
+        }
+
         void AddLocalId(const std::string& id) {
-            local_to_offset.back()[id] = local_to_offset.back().size() * 4;
+            locals.push_back(id);
         }
 
         std::size_t GetOffsetForAttr(const std::string& id) {
@@ -45,20 +40,30 @@ namespace backend {
             return -1;
         }
 
-        std::size_t GetOffsetForLocal(const std::string& id) {
-            for (std::size_t i = local_to_offset.size(); i > 0; --i) {
-                const auto& scope = local_to_offset[i - 1];
-                auto offset = scope.find(id);
-                if (offset != scope.end()) return offset->second;
+        std::size_t GetPositionForLocal(const std::string& id) {
+            for (std::size_t i = locals.size(); i > 0; --i) {
+                if (locals[i] == id) {
+                    return locals.size() - 1 - i;
+                }
             }
             return -1;
         }
 
+        std::string GetSelfType() const {
+            return current_class_.type;
+        }
+
+        std::string GetFileName() const {
+            return current_class_.filename;
+        }
+
     private:
-        std::string class_name_;
+        const semant::TypeEnvironment& type_env_;
+
+        parser::Class current_class_;
         std::string method_name_;
         std::map<std::string, int> attr_to_offset;
         std::map<std::string, int> arg_to_offset;
-        std::vector<std::map<std::string, std::size_t>> local_to_offset;
+        std::vector<std::string> locals;
     };
 }

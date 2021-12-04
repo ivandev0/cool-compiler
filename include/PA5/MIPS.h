@@ -74,6 +74,11 @@ namespace backend {
             return this;
         }
 
+        MIPS* jalr(const Reg& r) {
+            heap_ << "\tjalr\t" << r << "\n";
+            return this;
+        }
+
         MIPS* jr(const Reg& r) {
             heap_ << "\tjr\t" << r << "\n";
             return this;
@@ -81,6 +86,11 @@ namespace backend {
 
         MIPS* addiu(const Reg& r1, const Reg& r2, int arg) {
             heap_ << "\taddiu\t" << r1 << " " << r2 << " " << arg << "\n";
+            return this;
+        }
+
+        MIPS* li(const Reg& r, const std::size_t& value) {
+            heap_ << "\tli\t" << r << " " << value << "\n";
             return this;
         }
 
@@ -118,6 +128,11 @@ namespace backend {
 
         MIPS* pop() {
             addiu(R::sp, R::sp, 4);
+            return this;
+        }
+
+        MIPS* bne(const Reg& r1, const Reg& r2, const std::string& label) {
+            heap_ << "\tbne\t" << r1 << " " << r2 << " " << label << "\n";
             return this;
         }
 
