@@ -7,6 +7,7 @@
 #include "Const.h"
 #include "MIPS.h"
 #include "Tables.h"
+#include "Context.h"
 
 namespace backend {
     class AsmModule: private parser::ASTVisitor<void> {
@@ -98,7 +99,7 @@ namespace backend {
                 if (!type_env_.class_table_.IsBasicClass(klass.type)) {
                     // TODO: load attrs
                 }
-                mips->move("$a0", "$s0");
+                mips->move(R::acc, R::s0);
             }
             mips->epilog(0);
         }
@@ -151,37 +152,41 @@ namespace backend {
             }
         }
 
+        std::string NextLabel(const std::string& prefix = "") {
+            return prefix + "_label_" + std::to_string(label_index_++);
+        }
+
     private:
         void VisitClass(parser::Class *klass) override;
-        void VisitAttrFeature(parser::AttrFeature *attrFeature) override;
+        void VisitAttrFeature(parser::AttrFeature *attrFeature) override { /*nothing*/ };
         void VisitMethodFeature(parser::MethodFeature *methodFeature) override;
-        void VisitFormal(parser::Formal *formal) override {};
-        void VisitAssignExpression(parser::AssignExpression *expr) override {};
-        void VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) override {};
-        void VisitDispatchExpression(parser::DispatchExpression *expr) override {};
-        void VisitIfExpression(parser::IfExpression *expr) override {};
-        void VisitWhileExpression(parser::WhileExpression *expr) override {};
-        void VisitBlockExpression(parser::BlockExpression *expr) override {};
-        void VisitLetExpression(parser::LetExpression *expr) override {};
-        void VisitCaseExpression(parser::CaseExpression *expr) override {};
-        void VisitNewExpression(parser::NewExpression *expr) override {};
-        void VisitIsVoidExpression(parser::IsVoidExpression *expr) override {};
-        void VisitPlusExpression(parser::PlusExpression *expr) override {};
-        void VisitMinusExpression(parser::MinusExpression *expr) override {};
-        void VisitMulExpression(parser::MulExpression *expr) override {};
-        void VisitDivExpression(parser::DivExpression *expr) override {};
-        void VisitInverseExpression(parser::InverseExpression *expr) override {};
-        void VisitLessExpression(parser::LessExpression *expr) override {};
-        void VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) override {};
-        void VisitEqualExpression(parser::EqualExpression *expr) override {};
-        void VisitNotExpression(parser::NotExpression *expr) override {};
-        void VisitInBracketsExpression(parser::InBracketsExpression *expr) override {};
-        void VisitIntExpression(parser::IntExpression *expr) override {};
-        void VisitStringExpression(parser::StringExpression *expr) override {};
-        void VisitBoolExpression(parser::BoolExpression *expr) override {};
-        void VisitIdExpression(parser::IdExpression *expr) override {};
-        void VisitNoExprExpression(parser::NoExprExpression *expr) override {};
-        void VisitCaseBranchExpression(parser::CaseBranchExpression *expr) override {};
+        void VisitFormal(parser::Formal *formal) override { /*nothing*/ };
+        void VisitAssignExpression(parser::AssignExpression *expr) override;
+        void VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) override;
+        void VisitDispatchExpression(parser::DispatchExpression *expr) override;
+        void VisitIfExpression(parser::IfExpression *expr) override;
+        void VisitWhileExpression(parser::WhileExpression *expr) override;
+        void VisitBlockExpression(parser::BlockExpression *expr) override;
+        void VisitLetExpression(parser::LetExpression *expr) override;
+        void VisitCaseExpression(parser::CaseExpression *expr) override;
+        void VisitNewExpression(parser::NewExpression *expr) override;
+        void VisitIsVoidExpression(parser::IsVoidExpression *expr) override;
+        void VisitPlusExpression(parser::PlusExpression *expr) override;
+        void VisitMinusExpression(parser::MinusExpression *expr) override;
+        void VisitMulExpression(parser::MulExpression *expr) override;
+        void VisitDivExpression(parser::DivExpression *expr) override;
+        void VisitInverseExpression(parser::InverseExpression *expr) override;
+        void VisitLessExpression(parser::LessExpression *expr) override;
+        void VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) override;
+        void VisitEqualExpression(parser::EqualExpression *expr) override;
+        void VisitNotExpression(parser::NotExpression *expr) override;
+        void VisitInBracketsExpression(parser::InBracketsExpression *expr) override;
+        void VisitIntExpression(parser::IntExpression *expr) override;
+        void VisitStringExpression(parser::StringExpression *expr) override;
+        void VisitBoolExpression(parser::BoolExpression *expr) override;
+        void VisitIdExpression(parser::IdExpression *expr) override;
+        void VisitNoExprExpression(parser::NoExprExpression *expr) override;
+        void VisitCaseBranchExpression(parser::CaseBranchExpression *expr) override;
 
     public:
         virtual ~AsmModule() {
@@ -190,12 +195,14 @@ namespace backend {
 
     private:
         MIPS* mips = new MIPS();
+        Context context;
         const semant::TypeEnvironment& type_env_;
         std::vector<IntConst> int_constants_;
         std::vector<BoolConst> bool_constants_;
         std::vector<StrConst> str_constants_;
 
         std::size_t tag = 0;
+        std::size_t label_index_ = 0;
         std::vector<Prototype> prototypes_;
         std::vector<DispatchTable> dispatch_tables_;
     };

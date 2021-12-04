@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "Registers.h"
 
 namespace backend {
     class MIPS {
@@ -50,21 +51,21 @@ namespace backend {
         }
 
         MIPS* prolog(int n) {
-            addiu("$sp", "$sp", -12 - n);
-            sw("$fp", "12($sp)");
-            sw("$s0", "8($sp)");
-            sw("$ra", "4($sp)");
-            addiu("$fp", "$sp", 4);
-            move("$s0", "$a0");
+            addiu(R::sp, R::sp, -12 - n);
+            sw(R::fp, R::sp.Shift(12));
+            sw(R::s0, R::sp.Shift(8));
+            sw(R::ra, R::sp.Shift(4));
+            addiu(R::fp, R::sp, 4);
+            move(R::s0, R::acc);
             return this;
         }
 
         MIPS* epilog(int n) {
-            lw("$fp", "12($sp)");
-            lw("$s0", "8($sp)");
-            lw("$ra", "4($sp)");
-            addiu("$sp", "$sp", 12 + n);
-            jr("$ra");
+            lw(R::fp, R::sp.Shift(12));
+            lw(R::s0, R::sp.Shift(8));
+            lw(R::ra, R::sp.Shift(4));
+            addiu(R::sp, R::sp, 12 + n);
+            jr(R::ra);
             return this;
         }
 
@@ -73,33 +74,50 @@ namespace backend {
             return this;
         }
 
-        MIPS* jr(const std::string& r) {
+        MIPS* jr(const Reg& r) {
             heap_ << "\tjr\t" << r << "\n";
             return this;
         }
 
-        MIPS* addiu(const std::string& r1, const std::string& r2, int arg) {
+        MIPS* addiu(const Reg& r1, const Reg& r2, int arg) {
             heap_ << "\taddiu\t" << r1 << " " << r2 << " " << arg << "\n";
             return this;
         }
 
-        MIPS* la(const std::string& r, const std::string& addr) {
+        MIPS* la(const Reg& r, const std::string& addr) {
             heap_ << "\tla\t" << r << " " << addr << "\n";
             return this;
         }
 
-        MIPS* lw(const std::string& r1, const std::string& r2) {
+        MIPS* lw(const Reg& r1, const Reg& r2) {
             heap_ << "\tlw\t" << r1 << " " << r2 << "\n";
             return this;
         }
 
-        MIPS* sw(const std::string& r1, const std::string& r2) {
+        MIPS* sw(const Reg& r1, const Reg& r2) {
             heap_ << "\tsw\t" << r1 << " " << r2 << "\n";
             return this;
         }
 
-        MIPS* move(const std::string& to, const std::string& from) {
+        MIPS* move(const Reg& to, const Reg& from) {
             heap_ << "\tmove\t" << to << " " << from << "\n";
+            return this;
+        }
+
+        MIPS* push(const Reg& r) {
+            sw(r, R::sp.Shift(0));
+            addiu(R::sp, R::sp, -4);
+            return this;
+        }
+
+        MIPS* pop(const Reg& r) {
+            addiu(R::sp, R::sp, 4);
+            lw(r, R::sp.Shift(0));
+            return this;
+        }
+
+        MIPS* pop() {
+            addiu(R::sp, R::sp, 4);
             return this;
         }
 
