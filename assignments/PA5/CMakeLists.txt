@@ -20,7 +20,7 @@ set(SEMANT_CPP_FILES
         ${cool_compiler_SOURCE_DIR}/src/PA5/AsmModule.cpp
 )
 
-file(GLOB tests "tests/*.test")
+file(GLOB tests "tests/*.cl")
 
 add_executable(bin_test ${SEMANT_CPP_FILES})
 target_include_directories(bin_test PRIVATE ${SEMANT_HEADER_FILES})

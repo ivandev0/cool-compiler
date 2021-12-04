@@ -13,6 +13,10 @@ inline bool EndsWith(std::string const & value, std::string const & ending) {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+inline std::string DropExtension(std::string const & value) {
+    return value.substr(0, value.size() - 3);
+}
+
 std::stringstream RunSpim(const std::string& spim_path, const std::string& file_name) {
     std::system((spim_path + " " + file_name + " > spim_result.txt").c_str());
     std::ifstream spim_file("spim_result.txt");
@@ -26,7 +30,7 @@ std::stringstream RunSpim(const std::string& spim_path, const std::string& file_
 
 std::stringstream GetExpected(const std::string& coolc_path, const std::string& spim_path, const std::string& file_name) {
     std::system((coolc_path + " " + file_name).c_str());
-    return RunSpim(spim_path, file_name + ".s");
+    return RunSpim(spim_path, DropExtension(file_name) + ".s");
 }
 
 std::stringstream GetActual(const std::string& spim_path, const std::string& file_name) {
@@ -46,11 +50,11 @@ std::stringstream GetActual(const std::string& spim_path, const std::string& fil
     semant::SemanticAnalyzer analyzer;
     analyzer.Analyze(&program);
 
-    std::ofstream spim_file(file_name + ".s");
+    std::ofstream spim_file(DropExtension(file_name) + ".s");
     spim_file << backend::CoolBackend::Convert(analyzer.GetTypeEnvironment());
     spim_file.close();
 
-    return RunSpim(spim_path, file_name + ".s");
+    return RunSpim(spim_path, DropExtension(file_name) + ".s");
 }
 
 int main(int argc, char** argv) {
@@ -64,7 +68,7 @@ int main(int argc, char** argv) {
     std::string actual;
     std::string expect;
     while (std::getline(expected_result, expect, '\n') && std::getline(actual_result, actual, '\n')) {
-        if (EndsWith(expect, actual)) {
+        if (expect == actual) {
             std::cout << actual << std::endl;
         } else {
             std::cerr << "Lines are not equal." << std::endl;
