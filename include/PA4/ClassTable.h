@@ -104,18 +104,18 @@ namespace semant {
             return last_common;
         }
 
+        parser::Class GetClassByName(const std::string& type) const {
+            if (type == object_class_.type) return object_class_;
+            if (type == io_class_.type) return io_class_;
+            if (type == int_class_.type) return int_class_;
+            if (type == str_class_.type) return str_class_;
+            if (type == bool_class_.type) return bool_class_;
+            return *std::find_if(classes_.begin(), classes_.end(), [&type](const parser::Class& klass) { return type == klass.type; });
+        }
+
         std::vector<parser::AttrFeature> GetAttributesOf(const std::string& type) const {
             if (type == object_class_.type || type == io_class_.type) return {};
-            parser::Class klass;
-            if (type == int_class_.type) {
-                klass = int_class_;
-            } else if (type == str_class_.type) {
-                klass = str_class_;
-            } else if (type == bool_class_.type) {
-                klass = bool_class_;
-            } else {
-                klass = *std::find_if(classes_.begin(), classes_.end(), [&type](const parser::Class& klass) { return type == klass.type; });
-            }
+            parser::Class klass = GetClassByName(type);
 
             std::vector<parser::AttrFeature> attrs;
             for (auto feature : klass.features) {
@@ -124,6 +124,17 @@ namespace semant {
                 }
             }
             return attrs;
+        }
+
+        std::vector<parser::AttrFeature> GetAllAttributesOf(const std::string& type) const {
+            if (type == object_class_.type || type == io_class_.type) return {};
+            parser::Class klass = GetClassByName(type);
+
+            std::vector<parser::AttrFeature> super_attrs = GetAllAttributesOf(klass.parent);
+            std::vector<parser::AttrFeature> attrs = GetAttributesOf(type);
+            super_attrs.insert(super_attrs.end(), attrs.begin(), attrs.end());
+
+            return super_attrs;
         }
 
         std::string GetParentOf(const std::string& type) const {

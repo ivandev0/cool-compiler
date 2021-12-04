@@ -77,7 +77,7 @@ namespace backend {
 
     private:
         void BuildPrototype(const std::string& name) {
-            std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAttributesOf(name);
+            std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAllAttributesOf(name);
             std::vector<std::string> types;
             transform(attrs.begin(), attrs.end(), back_inserter(types), [](const auto& attr) { return attr.type; });
             prototypes_.emplace_back(name, GetNextTag(), types);
@@ -97,7 +97,11 @@ namespace backend {
             if (klass.type != "Object") {
                 mips->jal(klass.parent + "_init");
                 if (!type_env_.class_table_.IsBasicClass(klass.type)) {
-                    // TODO: load attrs
+                    std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAttributesOf(klass.type);
+                    for (std::size_t i = 0; i < attrs.size(); ++i) {
+                        VisitExpression(&*attrs[i].expr);
+                        mips->sw(R::acc, R::s0.Shift(12 + 4 * i));
+                    }
                 }
                 mips->move(R::acc, R::s0);
             }

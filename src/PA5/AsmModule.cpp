@@ -20,7 +20,7 @@ void backend::AsmModule::VisitClass(parser::Class *klass) {
     BuildDispatchTable(klass->type);
     mips->SetHeapMode();
     context.SetClassName(klass->type);
-    context.AddAttrs(type_env_.class_table_.GetAttributesOf(klass->type));
+    context.AddAttrs(type_env_.class_table_.GetAllAttributesOf(klass->type));
     BuildInit(*klass);
     if (!type_env_.class_table_.IsBasicClass(klass->type)) {
         for (auto feature: klass->features) {
