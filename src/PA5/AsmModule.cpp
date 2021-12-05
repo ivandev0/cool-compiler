@@ -55,13 +55,13 @@ void backend::AsmModule::VisitAssignExpression(parser::AssignExpression *expr) {
         return;
     }
     if (attr_offset != -1) {
-        mips->sw(R::acc, R::s0.Shift(attr_offset))->genGc();
+        mips->sw(R::acc, R::s0.Shift(attr_offset))->genGc(attr_offset);
         return;
     }
 }
 
 void backend::AsmModule::VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) {
-    VisitCommonDispatchExpression(&*expr->expr, expr->id->id, expr->type, expr->list);
+    VisitCommonDispatchExpression(&*expr->expr, expr->id->id, expr->type, expr->list, true);
 }
 
 void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *expr) {
@@ -73,7 +73,8 @@ void backend::AsmModule::VisitCommonDispatchExpression(
     parser::Expression* expr,
     const std::string& name,
     const std::string& type,
-    const std::vector<std::shared_ptr<parser::Expression>>& args
+    const std::vector<std::shared_ptr<parser::Expression>>& args,
+    bool is_static
 ) {
     for (const auto &arg : args) {
         VisitExpression(&*arg);
@@ -91,8 +92,12 @@ void backend::AsmModule::VisitCommonDispatchExpression(
         ->label(dispatchLabel);
 
     auto offset = GetMethodOffset(type, name);
-    mips->lw(R::t1, R::acc.Shift(8))            // get dispatch table
-        ->lw(R::t1, R::t1.Shift(offset * 4))    // get method address
+    if (is_static) {
+        mips->la(R::t1, Names::FormDispTableName(type));    // get dispatch table
+    } else {
+        mips->lw(R::t1, R::acc.Shift(8));                   // get dispatch table
+    }
+    mips->lw(R::t1, R::t1.Shift(offset * 4))    // get method address
         ->jalr(R::t1);
 
     for (const auto &arg : args) {

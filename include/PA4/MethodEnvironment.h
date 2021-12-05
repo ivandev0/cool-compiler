@@ -45,20 +45,6 @@ namespace semant {
             return &sig->second;
         }
 
-        std::vector<Method> GetMethodsFor(const std::string& type) const {
-            std::vector<Method> methods;
-            std::transform(method_to_signature_.begin(), method_to_signature_.end(), std::back_inserter(methods), [](const auto& method) {
-                return method.first;
-            });
-
-            std::vector<Method> result;
-            std::copy_if(methods.begin(), methods.end(), std::back_inserter(result), [&type](const auto& method) {
-                return method.class_name == type;
-            });
-
-            return result;
-        }
-
     private:
         static void AddToMap(
             const parser::Class& class_,

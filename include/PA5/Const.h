@@ -64,7 +64,7 @@ namespace backend {
                     ->word(std::to_string(str_tag));
 
             if (!val.empty()) {
-                mips->word(4 + static_cast <int> (std::floor(val.size() / 4.0)));
+                mips->word(4 + static_cast <int> (std::ceil((val.size() + 1) / 4.0)));
             } else {
                 mips->word(5);
             }

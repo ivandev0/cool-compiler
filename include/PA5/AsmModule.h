@@ -99,13 +99,33 @@ namespace backend {
             prototypes_.emplace_back(name, GetTagFor(name), types);
         }
 
+        void GetMethodsFor(const std::string& type, std::vector<std::pair<std::string, std::string>>& methods) {
+            if (type != Names::obj_name) {
+                GetMethodsFor(type_env_.class_table_.GetParentOf(type), methods);
+            }
+
+            auto klass = type_env_.class_table_.GetClassByName(type);
+            for (auto feature : klass.features) {
+                if (auto data = std::get_if<parser::MethodFeature>(&feature.feature)) {
+                    auto overridden = false;
+                    for (std::size_t i = 0; i < methods.size(); ++i) {
+                        if (methods[i].second == data->id.id) {
+                            overridden = true;
+                            methods[i] = {klass.type, data->id.id};
+                            break;
+                        }
+                    }
+                    if (!overridden) {
+                        methods.emplace_back(klass.type, data->id.id);
+                    }
+                }
+            }
+        }
+
         void BuildDispatchTable(const std::string& type) {
-            auto methods = type_env_.method_env_.GetMethodsFor(type);
-            std::vector<std::pair<std::string, std::string>> names;
-            transform(methods.begin(), methods.end(), back_inserter(names), [](const auto& method) {
-                return std::make_pair(method.original_type, method.method_name);
-            });
-            dispatch_tables_.emplace_back(type, names);
+            std::vector<std::pair<std::string, std::string>> methods;
+            GetMethodsFor(type, methods);
+            dispatch_tables_.emplace_back(type, methods);
         }
 
         void BuildInit(const parser::Class& klass) {
@@ -116,7 +136,7 @@ namespace backend {
                     std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAttributesOf(klass.type);
                     for (std::size_t i = 0; i < attrs.size(); ++i) {
                         InitVariable(&*attrs[i].expr, attrs[i].type);
-                        mips->sw(R::acc, R::s0.Shift(12 + 4 * i));
+                        mips->sw(R::acc, R::s0.Shift(12 + 4 * i))->genGc(12 + 4 * i);
                     }
                 }
             }
@@ -209,7 +229,8 @@ namespace backend {
 
         void InitVariable(parser::Expression *expr, const std::string& type);
         void VisitCommonDispatchExpression(
-            parser::Expression* expr, const std::string& name, const std::string& type, const std::vector<std::shared_ptr<parser::Expression>>& args
+            parser::Expression* expr, const std::string& name, const std::string& type,
+            const std::vector<std::shared_ptr<parser::Expression>>& args, bool is_static = false
         );
 
     public:

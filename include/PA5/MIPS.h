@@ -159,8 +159,8 @@ namespace backend {
             return this;
         }
 
-        MIPS* genGc() {
-            addiu(R::a1, R::s0, 12);
+        MIPS* genGc(std::size_t offset) {
+            addiu(R::a1, R::s0, offset);
             jal("_GenGC_Assign");
             return this;
         }
