@@ -29,7 +29,7 @@ std::stringstream RunSpim(const std::string& spim_path, const std::string& file_
 }
 
 std::stringstream GetExpected(const std::string& coolc_path, const std::string& spim_path, const std::string& file_name) {
-    std::system((coolc_path + " " + file_name).c_str());
+    std::system((coolc_path + " -g -t " + file_name).c_str());
     return RunSpim(spim_path, DropExtension(file_name) + ".s");
 }
 
@@ -50,11 +50,11 @@ std::stringstream GetActual(const std::string& spim_path, const std::string& fil
     semant::SemanticAnalyzer analyzer;
     analyzer.Analyze(&program);
 
-    std::ofstream spim_file(DropExtension(file_name) + ".s");
+    std::ofstream spim_file(DropExtension(file_name) + "_mine.s");
     spim_file << backend::CoolBackend::Convert(analyzer.GetTypeEnvironment());
     spim_file.close();
 
-    return RunSpim(spim_path, DropExtension(file_name) + ".s");
+    return RunSpim(spim_path, DropExtension(file_name) + "_mine.s");
 }
 
 int main(int argc, char** argv) {

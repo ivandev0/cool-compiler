@@ -78,11 +78,25 @@ namespace backend {
         std::size_t GetNextTag() { return tag++; }
 
     private:
+        void SetUpTags(const std::vector<parser::Class>& classes) {
+            for (const auto &item : classes) {
+                tags_[item.type] = GetNextTag();
+            }
+        }
+
+        std::size_t GetTagFor(const std::string& type) {
+            auto type_tag = tags_.find(type);
+            if (type_tag != tags_.end()) {
+                return type_tag->second;
+            }
+            return 0; // TODO: maybe throw exception
+        }
+
         void BuildPrototype(const std::string& name) {
             std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAllAttributesOf(name);
             std::vector<std::string> types;
             transform(attrs.begin(), attrs.end(), back_inserter(types), [](const auto& attr) { return attr.type; });
-            prototypes_.emplace_back(name, GetNextTag(), types);
+            prototypes_.emplace_back(name, GetTagFor(name), types);
         }
 
         void BuildDispatchTable(const std::string& type) {
@@ -107,15 +121,6 @@ namespace backend {
                 }
             }
             mips->move(R::acc, R::s0)->epilog(0);
-        }
-
-        std::size_t GetTagFor(const std::string& type) {
-            for (const auto &item : prototypes_) {
-                if (item.GetName() == type) {
-                    return item.GetTag();
-                }
-            }
-            return 0; // TODO: maybe throw exception
         }
 
         void SetUpBasicTags() {
@@ -227,6 +232,7 @@ namespace backend {
         std::size_t tag = 0;
         std::size_t label_index_ = 0;
         std::vector<Prototype> prototypes_;
+        std::map<std::string, std::size_t> tags_;
         std::vector<DispatchTable> dispatch_tables_;
     };
 }

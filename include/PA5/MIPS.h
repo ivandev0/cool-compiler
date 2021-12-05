@@ -131,6 +131,11 @@ namespace backend {
             return this;
         }
 
+        MIPS* beq(const Reg& r1, const Reg& r2, const std::string& label) {
+            heap_ << "\tbeq\t" << r1 << " " << r2 << " " << label << "\n";
+            return this;
+        }
+
         // branch if equal to zero
         MIPS* beqz(const Reg& r, const std::string& label) {
             heap_ << "\tbeqz\t" << r << " " << label << "\n";

@@ -1,12 +1,14 @@
 #include "AsmModule.h"
 
 void backend::AsmModule::VisitProgram(parser::Program *program) {
+    auto defined_classes = type_env_.class_table_.GetDefinedClasses();
+
+    SetUpTags(defined_classes);
     GetOrCreateConstFor((std::string) "");
     GetOrCreateConstFor((std::size_t) 0);
     GetOrCreateConstFor(false);
     GetOrCreateConstFor(true);
 
-    auto defined_classes = type_env_.class_table_.GetDefinedClasses();
     for (const auto &item : defined_classes) {
         GetOrCreateConstFor(item.type);
     }
@@ -92,6 +94,10 @@ void backend::AsmModule::VisitCommonDispatchExpression(
     mips->lw(R::t1, R::acc.Shift(8))            // get dispatch table
         ->lw(R::t1, R::t1.Shift(offset * 4))    // get method address
         ->jalr(R::t1);
+
+    for (const auto &arg : args) {
+        context.PopLocalId();
+    }
 }
 
 void backend::AsmModule::VisitIfExpression(parser::IfExpression *expr) {
@@ -107,7 +113,17 @@ void backend::AsmModule::VisitIfExpression(parser::IfExpression *expr) {
     mips->label(end);
 }
 
-void backend::AsmModule::VisitWhileExpression(parser::WhileExpression *expr) {  }
+void backend::AsmModule::VisitWhileExpression(parser::WhileExpression *expr) {
+    auto body_label = NextLabel();
+    auto end_label = NextLabel();
+
+    mips->label(body_label);
+    VisitExpression(&*expr->condition);
+    mips->lw(R::t1, R::acc.Shift(12))
+        ->beq(R::t1, R::zero, end_label);
+    VisitExpression(&*expr->body);
+    mips->b(body_label)->label(end_label)->move(R::acc, R::zero);
+}
 
 void backend::AsmModule::VisitBlockExpression(parser::BlockExpression *expr) {
     for (const auto &item : expr->list) {
@@ -124,7 +140,7 @@ void backend::AsmModule::VisitLetExpression(parser::LetExpression *expr) {
     context.PopLocalId();
 }
 
-void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) {  }
+void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitCaseBranchExpression(parser::CaseBranchExpression *expr) {  }
 
 void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {
@@ -146,16 +162,16 @@ void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {
         ->jalr(R::t1);
 }
 
-void backend::AsmModule::VisitIsVoidExpression(parser::IsVoidExpression *expr) {  }
-void backend::AsmModule::VisitPlusExpression(parser::PlusExpression *expr) {  }
-void backend::AsmModule::VisitMinusExpression(parser::MinusExpression *expr) {  }
-void backend::AsmModule::VisitMulExpression(parser::MulExpression *expr) {  }
-void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) {  }
-void backend::AsmModule::VisitInverseExpression(parser::InverseExpression *expr) {  }
-void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) {  }
-void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) {  }
-void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) {  }
-void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) {  }
+void backend::AsmModule::VisitIsVoidExpression(parser::IsVoidExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitPlusExpression(parser::PlusExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitMinusExpression(parser::MinusExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitMulExpression(parser::MulExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitInverseExpression(parser::InverseExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) { throw std::runtime_error("Not implemented"); }
 
 void backend::AsmModule::VisitInBracketsExpression(parser::InBracketsExpression *expr) {
     VisitExpression(&*expr->expr);
@@ -203,7 +219,7 @@ void backend::AsmModule::InitVariable(parser::Expression *expr, const std::strin
         if (type == Names::int_name) mips->la(R::acc, GetOrCreateConstFor((std::size_t) 0));
         else if (type == Names::bool_name) mips->la(R::acc, GetOrCreateConstFor(false));
         else if (type == Names::str_name) mips->la(R::acc, GetOrCreateConstFor((std::string) ""));
-        else VisitExpression(expr);;
+        else VisitExpression(expr);
     } else {
         VisitExpression(expr);
     }
