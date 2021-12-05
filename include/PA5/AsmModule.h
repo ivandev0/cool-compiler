@@ -101,13 +101,19 @@ namespace backend {
                 if (!type_env_.class_table_.IsBasicClass(klass.type)) {
                     std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAttributesOf(klass.type);
                     for (std::size_t i = 0; i < attrs.size(); ++i) {
-                        VisitExpression(&*attrs[i].expr);
+                        if (std::get_if<parser::NoExprExpression>(&(attrs[i].expr->data)) != nullptr) {
+                            if (attrs[i].type == Names::int_name) mips->la(R::acc, GetOrCreateConstFor((std::size_t) 0));
+                            else if (attrs[i].type == Names::bool_name) mips->la(R::acc, GetOrCreateConstFor(false));
+                            else if (attrs[i].type == Names::str_name) mips->la(R::acc, GetOrCreateConstFor(""));
+                            else VisitExpression(&*attrs[i].expr);;
+                        } else {
+                            VisitExpression(&*attrs[i].expr);
+                        }
                         mips->sw(R::acc, R::s0.Shift(12 + 4 * i));
                     }
                 }
-                mips->move(R::acc, R::s0);
             }
-            mips->epilog(0);
+            mips->move(R::acc, R::s0)->epilog(0);
         }
 
         std::size_t GetTagFor(const std::string& type) {

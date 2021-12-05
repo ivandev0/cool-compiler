@@ -34,18 +34,18 @@ void backend::AsmModule::VisitMethodFeature(parser::MethodFeature *methodFeature
     mips->label(context.GetSelfType() + "." + methodFeature->id.id)
         ->prolog(0);
     VisitExpression(&*methodFeature->expr);
-    mips->epilog(0);
+    mips->epilog(methodFeature->params.size());
 }
 
 void backend::AsmModule::VisitAssignExpression(parser::AssignExpression *expr) {
     VisitExpression(&*expr->expr);
 
-    auto local_offset = context.GetPositionForLocal(expr->id->id);
+    auto local_offset = context.GetOffsetForLocal(expr->id->id);
     auto formal_offset = context.GetOffsetForFormal(expr->id->id);
     auto attr_offset = context.GetOffsetForAttr(expr->id->id);
 
     if (local_offset != -1) {
-        mips->sw(R::acc, R::fp.Shift(-4 * local_offset));
+        mips->sw(R::acc, R::fp.Shift(local_offset));
         return;
     }
     if (formal_offset != -1) {
@@ -83,7 +83,19 @@ void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *exp
         ->jalr(R::t1);
 }
 
-void backend::AsmModule::VisitIfExpression(parser::IfExpression *expr) {  }
+void backend::AsmModule::VisitIfExpression(parser::IfExpression *expr) {
+    auto falseBranch = NextLabel();
+    auto end = NextLabel();
+
+    VisitExpression(&*expr->condition);
+    mips->lw(R::t1, R::acc.Shift(12))
+        ->beqz(R::t1, falseBranch);
+    VisitExpression(&*expr->trueBranch);
+    mips->b(end)->label(falseBranch);
+    VisitExpression(&*expr->falseBranch);
+    mips->label(end);
+}
+
 void backend::AsmModule::VisitWhileExpression(parser::WhileExpression *expr) {  }
 
 void backend::AsmModule::VisitBlockExpression(parser::BlockExpression *expr) {
@@ -125,7 +137,10 @@ void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) {  }
 void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) {  }
 void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) {  }
 void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) {  }
-void backend::AsmModule::VisitInBracketsExpression(parser::InBracketsExpression *expr) {  }
+
+void backend::AsmModule::VisitInBracketsExpression(parser::InBracketsExpression *expr) {
+    VisitExpression(&*expr->expr);
+}
 
 void backend::AsmModule::VisitIntExpression(parser::IntExpression *expr) {
     mips->la(R::acc, GetOrCreateConstFor(expr->value));
@@ -141,12 +156,12 @@ void backend::AsmModule::VisitBoolExpression(parser::BoolExpression *expr) {
 }
 
 void backend::AsmModule::VisitIdExpression(parser::IdExpression *expr) {
-    auto local_offset = context.GetPositionForLocal(expr->id);
+    auto local_offset = context.GetOffsetForLocal(expr->id);
     auto formal_offset = context.GetOffsetForFormal(expr->id);
     auto attr_offset = context.GetOffsetForAttr(expr->id);
 
     if (local_offset != -1) {
-        mips->lw(R::acc, R::fp.Shift(-4 * local_offset));
+        mips->lw(R::acc, R::fp.Shift(local_offset));
         return;
     }
     if (formal_offset != -1) {

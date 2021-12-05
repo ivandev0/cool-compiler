@@ -12,8 +12,8 @@ namespace backend {
         void EnterMethod(const parser::MethodFeature& method) {
             method_name_ = method.id.id;
             arg_to_offset.clear();
-            for (const auto& formal: method.params) {
-                arg_to_offset[formal.id.id] = 16 + 4 * arg_to_offset.size();
+            for (std::size_t i = 0; i < method.params.size(); ++i) {
+                arg_to_offset[method.params[i].id.id] = 12 + 4 * (method.params.size() - 1) - 4 * i;
             }
         }
 
@@ -40,10 +40,10 @@ namespace backend {
             return -1;
         }
 
-        std::size_t GetPositionForLocal(const std::string& id) {
+        std::size_t GetOffsetForLocal(const std::string& id) {
             for (std::size_t i = locals.size(); i > 0; --i) {
                 if (locals[i] == id) {
-                    return locals.size() - 1 - i;
+                    return -4 * (locals.size() - 1 - i);
                 }
             }
             return -1;

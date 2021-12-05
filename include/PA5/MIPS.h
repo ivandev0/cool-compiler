@@ -65,7 +65,7 @@ namespace backend {
             lw(R::fp, R::sp.Shift(12));
             lw(R::s0, R::sp.Shift(8));
             lw(R::ra, R::sp.Shift(4));
-            addiu(R::sp, R::sp, 12 + n);
+            addiu(R::sp, R::sp, 12 + 4 * n);
             jr(R::ra);
             return this;
         }
@@ -123,6 +123,17 @@ namespace backend {
 
         MIPS* move(const Reg& to, const Reg& from) {
             heap_ << "\tmove\t" << to << " " << from << "\n";
+            return this;
+        }
+
+        MIPS* b(const std::string& label) {
+            heap_ << "\tb\t" << " " << label << "\n";
+            return this;
+        }
+
+        // branch if equal to zero
+        MIPS* beqz(const Reg& r, const std::string& label) {
+            heap_ << "\tbeqz\t" << r << " " << label << "\n";
             return this;
         }
 
