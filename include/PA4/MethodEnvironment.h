@@ -80,6 +80,7 @@ namespace semant {
                     auto method = method_to_signature.find({self_type, data->id.id});
                     if (method != method_to_signature.end()) {
                         CheckAllParamsMatchOriginal(*data, method->first, method->second);
+                        method_to_signature.erase(method);
                     }
                     method_to_signature[{self_type, data->id.id, class_.type}] = ToSignature(*data);
                 }

@@ -17,14 +17,14 @@ namespace backend {
             mips->data()->align(2);
 
             mips->SetHeapMode();
-            mips->global("heap_start")->label("heap_start")->word(0)->text()
-                ->global("Int_init")->global("String_init")->global("Bool_init")
-                ->global("Main_init")->global("Main.main");
+            mips->global(Names::heap_start)->label(Names::heap_start)->word(0)->text()
+                ->global(Names::FormInit(Names::int_name))
+                ->global(Names::FormInit(Names::str_name))
+                ->global(Names::FormInit(Names::bool_name))
+                ->global(Names::FormInit(Names::main))->global(Names::main_call);
         }
 
         void VisitProgram(parser::Program *program) override;
-
-        std::size_t GetNextTag() { return tag++; }
 
         std::string End() {
             mips->SetDataMode();
@@ -44,14 +44,14 @@ namespace backend {
             return mips->End();
         }
 
-    public:
+    private:
         std::string GetOrCreateConstFor(const std::string& str) {
             for (std::size_t i = 0; i < str_constants_.size(); ++i) {
                 if (str_constants_[i].Match(str)) {
                     return "str_const" + std::to_string(i);
                 }
             }
-            str_constants_.emplace_back(str, GetTagFor("String"), str_constants_.size(), GetOrCreateConstFor(str.size()));
+            str_constants_.emplace_back(str, GetTagFor(Names::str_name), str_constants_.size(), GetOrCreateConstFor(str.size()));
             return "str_const" + std::to_string(str_constants_.size() - 1);
         }
 
@@ -61,7 +61,7 @@ namespace backend {
                     return "int_const" + std::to_string(value);
                 }
             }
-            int_constants_.emplace_back(value, GetTagFor("Int"));
+            int_constants_.emplace_back(value, GetTagFor(Names::int_name));
             return "int_const" + std::to_string(value);
         }
 
@@ -71,9 +71,11 @@ namespace backend {
                     return "bool_const" + std::to_string((int) value);
                 }
             }
-            bool_constants_.emplace_back(value, GetTagFor("Bool"));
+            bool_constants_.emplace_back(value, GetTagFor(Names::bool_name));
             return "bool_const" + std::to_string((int) value);
         }
+
+        std::size_t GetNextTag() { return tag++; }
 
     private:
         void BuildPrototype(const std::string& name) {
@@ -93,9 +95,9 @@ namespace backend {
         }
 
         void BuildInit(const parser::Class& klass) {
-            mips->label(klass.type + "_init")->prolog(0);
-            if (klass.type != "Object") {
-                mips->jal(klass.parent + "_init");
+            mips->label(Names::FormInit(klass.type))->prolog(0);
+            if (klass.type != Names::obj_name) {
+                mips->jal(Names::FormInit(klass.parent));
                 if (!type_env_.class_table_.IsBasicClass(klass.type)) {
                     std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAttributesOf(klass.type);
                     for (std::size_t i = 0; i < attrs.size(); ++i) {
@@ -119,9 +121,9 @@ namespace backend {
 
         void SetUpBasicTags() {
             mips->global("_int_tag")->global("_bool_tag")->global("_string_tag")
-                ->label("_int_tag")->word(GetTagFor("Int"))
-                ->label("_bool_tag")->word(GetTagFor("Bool"))
-                ->label("_string_tag")->word(GetTagFor("String"));
+                ->label("_int_tag")->word(GetTagFor(Names::int_name))
+                ->label("_bool_tag")->word(GetTagFor(Names::bool_name))
+                ->label("_string_tag")->word(GetTagFor(Names::str_name));
         }
 
         void ConfigureGC() {
@@ -143,16 +145,16 @@ namespace backend {
         }
 
         void SetUpClassNameTable() {
-            mips->global("class_nameTab")->label("class_nameTab");
+            mips->global(Names::name_tab)->label(Names::name_tab);
             for (const auto &item : prototypes_) {
                 mips->word(GetOrCreateConstFor(item.GetName()));
             }
         }
 
         void SetUpClassObjectTable() {
-            mips->label("class_objTab");
+            mips->label(Names::obj_tab);
             for (const auto &item : prototypes_) {
-                mips->word(item.GetName() + "_protObj")->word(item.GetName() + "_init");
+                mips->word(Names::FormProtObjName(item.GetName()))->word(Names::FormInit(item.GetName()));
             }
         }
 

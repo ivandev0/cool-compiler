@@ -11,19 +11,19 @@ namespace backend {
         std::size_t GetTag() const { return tag; }
 
         void Serialize(MIPS* mips) const override {
-            mips->global(name + "_protObj")
+            mips->global(Names::FormProtObjName(name))
                 ->word("-1")
-                ->label(name + "_protObj")
+                ->label(Names::FormProtObjName(name))
                 ->word(tag)
                 ->word(types.size() + 3)
-                ->word(name + "_dispTab");
+                ->word(Names::FormDispTableName(name));
 
             for (const auto &type : types) {
-                if (type == "String" && name != "String") {
+                if (type == Names::str_name && name != Names::str_name) {
                     mips->word("str_const0");
-                } else if (type == "Int" && name != "Int") {
+                } else if (type == Names::int_name && name != Names::int_name) {
                     mips->word("int_const0");
-                } else if (type == "Bool" && name != "Bool") {
+                } else if (type == Names::bool_name && name != Names::bool_name) {
                     mips->word("bool_const0");
                 } else {
                     mips->word("0");
@@ -55,7 +55,7 @@ namespace backend {
         }
 
         void Serialize(MIPS* mips) const override {
-            mips->label(name + "_dispTab");
+            mips->label(Names::FormDispTableName(name));
             for (const auto &item : methods) {
                 mips->word(item.first + "." + item.second);
             }

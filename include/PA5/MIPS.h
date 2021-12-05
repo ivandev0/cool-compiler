@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "Registers.h"
+#include "Names.h"
 
 namespace backend {
     class MIPS {
@@ -86,6 +87,17 @@ namespace backend {
 
         MIPS* addiu(const Reg& r1, const Reg& r2, int arg) {
             heap_ << "\taddiu\t" << r1 << " " << r2 << " " << arg << "\n";
+            return this;
+        }
+
+        MIPS* addu(const Reg& r1, const Reg& r2, const Reg& r3) {
+            heap_ << "\taddu\t" << r1 << " " << r2 << " " << r3 << "\n";
+            return this;
+        }
+
+        // shift left logical
+        MIPS* sll(const Reg& r1, const Reg& r2, int arg) {
+            heap_ << "\tsll\t" << r1 << " " << r2 << " " << arg << "\n";
             return this;
         }
 

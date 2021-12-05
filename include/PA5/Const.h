@@ -19,7 +19,7 @@ namespace backend {
                 ->label("int_const" + std::to_string(val))
                 ->word(std::to_string(int_tag))
                 ->word(4)
-                ->word("Int_dispTab")
+                ->word(Names::FormDispTableName(Names::int_name))
                 ->word(val);
         }
 
@@ -41,7 +41,7 @@ namespace backend {
                 ->label("bool_const" + std::to_string(val))
                 ->word(std::to_string(bool_tag))
                 ->word(4)
-                ->word("Bool_dispTab")
+                ->word(Names::FormDispTableName(Names::bool_name))
                 ->word(val);
         }
 
@@ -69,7 +69,7 @@ namespace backend {
                 mips->word(5);
             }
 
-            mips->word("String_dispTab")->word(size_const);
+            mips->word(Names::FormDispTableName(Names::str_name))->word(size_const);
 
             if (!val.empty()) {
                 mips->ascii(val);

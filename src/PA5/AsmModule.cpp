@@ -31,7 +31,7 @@ void backend::AsmModule::VisitClass(parser::Class *klass) {
 void backend::AsmModule::VisitMethodFeature(parser::MethodFeature *methodFeature) {
     context.EnterMethod(*methodFeature);
 
-    mips->label("Main." + methodFeature->id.id)
+    mips->label(context.GetSelfType() + "." + methodFeature->id.id)
         ->prolog(0);
     VisitExpression(&*methodFeature->expr);
     mips->epilog(0);
@@ -73,7 +73,7 @@ void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *exp
     mips->bne(R::acc, R::zero, dispatchLabel)
         ->la(R::acc, GetOrCreateConstFor(context.GetFileName()))
         ->li(R::t1, expr->line_number)
-        ->jal("_dispatch_abort")
+        ->jal(Names::dispatch_abort)
         ->label(dispatchLabel);
 
     auto target = expr->expr->result_type == semant::ClassTable::self_type ? context.GetSelfType() : expr->expr->result_type;
@@ -95,7 +95,26 @@ void backend::AsmModule::VisitBlockExpression(parser::BlockExpression *expr) {
 void backend::AsmModule::VisitLetExpression(parser::LetExpression *expr) {  }
 void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) {  }
 void backend::AsmModule::VisitCaseBranchExpression(parser::CaseBranchExpression *expr) {  }
-void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {  }
+
+void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {
+    auto type = expr->result_type;
+    if (type != semant::ClassTable::self_type) {
+        mips->la(R::acc, Names::FormProtObjName(type))
+            ->jal(Names::copy)
+            ->jal(Names::FormInit(type));
+        return;
+    }
+    mips->la(R::t1, Names::obj_tab)
+        ->lw(R::t2, R::s0.Shift(0))     // load tag
+        ->sll(R::t2, R::t2, 3)
+        ->addu(R::t1, R::t1, R::t2)     // get reference to protObj
+        ->move(R::t5, R::t1)            // use t5 as temporary because t0-t4 can be modified by runtime
+        ->lw(R::acc, R::t1.Shift(0))    // load protObj to acc
+        ->jal(Names::copy)
+        ->lw(R::t1, R::t5.Shift(4))     // call init
+        ->jalr(R::t1);
+}
+
 void backend::AsmModule::VisitIsVoidExpression(parser::IsVoidExpression *expr) {  }
 void backend::AsmModule::VisitPlusExpression(parser::PlusExpression *expr) {  }
 void backend::AsmModule::VisitMinusExpression(parser::MinusExpression *expr) {  }
