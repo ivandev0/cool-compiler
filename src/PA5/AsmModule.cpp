@@ -104,7 +104,15 @@ void backend::AsmModule::VisitBlockExpression(parser::BlockExpression *expr) {
     }
 }
 
-void backend::AsmModule::VisitLetExpression(parser::LetExpression *expr) {  }
+void backend::AsmModule::VisitLetExpression(parser::LetExpression *expr) {
+    InitVariable(&*expr->expr, expr->type);
+    context.AddLocalId(expr->id->id);
+    mips->push(R::acc);
+    VisitExpression(&*expr->body);
+    mips->pop();
+    context.PopLocalId();
+}
+
 void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) {  }
 void backend::AsmModule::VisitCaseBranchExpression(parser::CaseBranchExpression *expr) {  }
 
@@ -177,4 +185,15 @@ void backend::AsmModule::VisitIdExpression(parser::IdExpression *expr) {
 
 void backend::AsmModule::VisitNoExprExpression(parser::NoExprExpression *expr) {
     mips->move(R::acc, R::zero);
+}
+
+void backend::AsmModule::InitVariable(parser::Expression *expr, const std::string& type) {
+    if (std::get_if<parser::NoExprExpression>(&(expr->data)) != nullptr) {
+        if (type == Names::int_name) mips->la(R::acc, GetOrCreateConstFor((std::size_t) 0));
+        else if (type == Names::bool_name) mips->la(R::acc, GetOrCreateConstFor(false));
+        else if (type == Names::str_name) mips->la(R::acc, GetOrCreateConstFor((std::string) ""));
+        else VisitExpression(expr);;
+    } else {
+        VisitExpression(expr);
+    }
 }

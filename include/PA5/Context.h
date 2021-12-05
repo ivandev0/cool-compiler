@@ -28,6 +28,10 @@ namespace backend {
             locals.push_back(id);
         }
 
+        void PopLocalId() {
+            locals.pop_back();
+        }
+
         std::size_t GetOffsetForAttr(const std::string& id) {
             auto offset = attr_to_offset.find(id);
             if (offset != attr_to_offset.end()) return offset->second;
@@ -40,10 +44,10 @@ namespace backend {
             return -1;
         }
 
-        std::size_t GetOffsetForLocal(const std::string& id) {
+        int GetOffsetForLocal(const std::string& id) {
             for (std::size_t i = locals.size(); i > 0; --i) {
-                if (locals[i] == id) {
-                    return -4 * (locals.size() - 1 - i);
+                if (locals[i - 1] == id) {
+                    return -4 * i;
                 }
             }
             return -1;

@@ -101,14 +101,7 @@ namespace backend {
                 if (!type_env_.class_table_.IsBasicClass(klass.type)) {
                     std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAttributesOf(klass.type);
                     for (std::size_t i = 0; i < attrs.size(); ++i) {
-                        if (std::get_if<parser::NoExprExpression>(&(attrs[i].expr->data)) != nullptr) {
-                            if (attrs[i].type == Names::int_name) mips->la(R::acc, GetOrCreateConstFor((std::size_t) 0));
-                            else if (attrs[i].type == Names::bool_name) mips->la(R::acc, GetOrCreateConstFor(false));
-                            else if (attrs[i].type == Names::str_name) mips->la(R::acc, GetOrCreateConstFor(""));
-                            else VisitExpression(&*attrs[i].expr);;
-                        } else {
-                            VisitExpression(&*attrs[i].expr);
-                        }
+                        InitVariable(&*attrs[i].expr, attrs[i].type);
                         mips->sw(R::acc, R::s0.Shift(12 + 4 * i));
                     }
                 }
@@ -208,6 +201,8 @@ namespace backend {
         void VisitIdExpression(parser::IdExpression *expr) override;
         void VisitNoExprExpression(parser::NoExprExpression *expr) override;
         void VisitCaseBranchExpression(parser::CaseBranchExpression *expr) override;
+
+        void InitVariable(parser::Expression *expr, const std::string& type);
 
     public:
         virtual ~AsmModule() {
