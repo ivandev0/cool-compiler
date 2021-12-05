@@ -58,16 +58,28 @@ void backend::AsmModule::VisitAssignExpression(parser::AssignExpression *expr) {
     }
 }
 
-void backend::AsmModule::VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) {  }
+void backend::AsmModule::VisitStaticDispatchExpression(parser::StaticDispatchExpression *expr) {
+    VisitCommonDispatchExpression(&*expr->expr, expr->id->id, expr->type, expr->list);
+}
 
 void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *expr) {
-    for (const auto &arg : expr->list) {
+    auto target = expr->expr->result_type == semant::ClassTable::self_type ? context.GetSelfType() : expr->expr->result_type;
+    VisitCommonDispatchExpression(&*expr->expr, expr->id->id, target, expr->list);
+}
+
+void backend::AsmModule::VisitCommonDispatchExpression(
+    parser::Expression* expr,
+    const std::string& name,
+    const std::string& type,
+    const std::vector<std::shared_ptr<parser::Expression>>& args
+) {
+    for (const auto &arg : args) {
         VisitExpression(&*arg);
         mips->push(R::acc);
         context.AddLocalId("");
     }
 
-    VisitExpression(&*expr->expr);
+    VisitExpression(&*expr);
 
     auto dispatchLabel = NextLabel();
     mips->bne(R::acc, R::zero, dispatchLabel)
@@ -76,8 +88,7 @@ void backend::AsmModule::VisitDispatchExpression(parser::DispatchExpression *exp
         ->jal(Names::dispatch_abort)
         ->label(dispatchLabel);
 
-    auto target = expr->expr->result_type == semant::ClassTable::self_type ? context.GetSelfType() : expr->expr->result_type;
-    auto offset = GetMethodOffset(target, expr->id->id);
+    auto offset = GetMethodOffset(type, name);
     mips->lw(R::t1, R::acc.Shift(8))            // get dispatch table
         ->lw(R::t1, R::t1.Shift(offset * 4))    // get method address
         ->jalr(R::t1);

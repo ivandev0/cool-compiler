@@ -203,6 +203,9 @@ namespace backend {
         void VisitCaseBranchExpression(parser::CaseBranchExpression *expr) override;
 
         void InitVariable(parser::Expression *expr, const std::string& type);
+        void VisitCommonDispatchExpression(
+            parser::Expression* expr, const std::string& name, const std::string& type, const std::vector<std::shared_ptr<parser::Expression>>& args
+        );
 
     public:
         virtual ~AsmModule() {
