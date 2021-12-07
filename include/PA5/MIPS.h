@@ -195,8 +195,25 @@ namespace backend {
             return this;
         }
 
+        // Branch on Less Than
         MIPS* blt(const Reg& r1, const Reg& r2, const std::string& label) {
             heap_ << "\tblt\t" << r1 << " " << r2 << " " << label << "\n";
+            return this;
+        }
+
+        MIPS* blt(const Reg& r1, std::size_t i, const std::string& label) {
+            heap_ << "\tblt\t" << r1 << " " << i << " " << label << "\n";
+            return this;
+        }
+
+        // Branch on Greater Than
+        MIPS* bgt(const Reg& r1, const Reg& r2, const std::string& label) {
+            heap_ << "\tbgt\t" << r1 << " " << r2 << " " << label << "\n";
+            return this;
+        }
+
+        MIPS* bgt(const Reg& r1, std::size_t i, const std::string& label) {
+            heap_ << "\tbgt\t" << r1 << " " << i << " " << label << "\n";
             return this;
         }
 

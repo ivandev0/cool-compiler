@@ -143,11 +143,19 @@ namespace semant {
         }
 
         std::vector<parser::Class> GetDefinedClasses() const {
-            std::vector<parser::Class> result = {object_class_, io_class_, int_class_, bool_class_, str_class_};
-            result.insert(result.end(), classes_.begin(), classes_.end());
+            std::vector<parser::Class> result;
+            CollectDFS(object_class_, result);
             return result;
         }
     private:
+        void CollectDFS(const parser::Class &klass, std::vector<parser::Class>& classes) const {
+            auto node = graph_.at(klass.type);
+            classes.push_back(GetClassByName(node->name));
+            for (const auto& child: node->children) {
+                CollectDFS(GetClassByName(child->name), classes);
+            }
+        }
+
         void CheckForCyclicInheritance(const std::shared_ptr<Node>& node, std::set<std::string>& visited) {
             for (const auto& child : node->children) {
                 auto result = visited.insert(child->name);
@@ -243,19 +251,19 @@ namespace semant {
     public:
         inline static std::string self_type = "SELF_TYPE";
 
+        parser::Class io_class_ = InitIO();
         parser::Class int_class_ = InitInt();
         parser::Class bool_class_ = InitBool();
         parser::Class str_class_ = InitString();
-        parser::Class io_class_ = InitIO();
         parser::Class object_class_ = InitObject();
 
     private:
+        Node io_node_{"IO", "Object", {}};
         Node int_node_{"Int", "Object", {}};
         Node bool_node_{"Bool", "Object", {}};
         Node string_node_{"String", "Object", {}};
-        Node io_node_{"IO", "Object", {}};
-        Node object_{"Object", "Object", {std::make_shared<Node>(int_node_), std::make_shared<Node>(bool_node_), std::make_shared<Node>(string_node_), std::make_shared<Node>(io_node_)}};
-        std::vector<Node> basic_classes_{object_, int_node_, bool_node_, string_node_, io_node_};
+        Node object_{"Object", "Object", {std::make_shared<Node>(io_node_), std::make_shared<Node>(int_node_), std::make_shared<Node>(bool_node_), std::make_shared<Node>(string_node_)}};
+        std::vector<Node> basic_classes_{object_, io_node_, int_node_, bool_node_, string_node_};
 
         std::map<std::string, std::shared_ptr<Node>> graph_;
         std::vector<parser::Class> classes_;

@@ -20,8 +20,8 @@ namespace backend {
 
         inline static std::string main_call = main + ".main";
         inline static std::string dispatch_abort = "_dispatch_abort";
-        inline static std::string case_no_match = "case_abort";
-        inline static std::string case_on_void = "case_abort2";
+        inline static std::string case_no_match = "_case_abort";
+        inline static std::string case_on_void = "_case_abort2";
         inline static std::string equality_test = "equality_test";
         inline static std::string copy = "Object.copy";
 

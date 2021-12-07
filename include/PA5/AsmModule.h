@@ -94,21 +94,36 @@ namespace backend {
             return "bool_const" + std::to_string((int) value);
         }
 
-        std::size_t GetNextTag() { return tag++; }
-
     private:
         void SetUpTags(const std::vector<parser::Class>& classes) {
+            auto tag = 0;
             for (const auto &item : classes) {
-                tags_[item.type] = GetNextTag();
+                tags_[item.type] = tag++;
             }
         }
 
-        std::size_t GetTagFor(const std::string& type) {
+        std::size_t GetTagFor(const std::string& type) const {
             auto type_tag = tags_.find(type);
             if (type_tag != tags_.end()) {
                 return type_tag->second;
             }
             return 0; // TODO: maybe throw exception
+        }
+
+
+        std::size_t GetTagForLastChildOf(const std::string& type) const {
+            auto begin = GetTagFor(type);
+            if (begin == tags_.size() - 1) return begin;
+
+            for (std::size_t i = begin + 1; i < tags_.size(); i++) {
+                auto new_type = std::find_if(std::begin(tags_), std::end(tags_), [&](const auto& pair) {
+                    return pair.second == i;
+                });
+                if (!type_env_.class_table_.CheckAIsSubtypeOfB(new_type->first, type)) {
+                    return  i - 1;
+                }
+            }
+            return tags_.size() - 1;
         }
 
         void BuildPrototype(const std::string& name) {
@@ -272,7 +287,6 @@ namespace backend {
         std::vector<BoolConst> bool_constants_;
         std::vector<StrConst> str_constants_;
 
-        std::size_t tag = 0;
         std::size_t label_index_ = 0;
         std::vector<Prototype> prototypes_;
         std::map<std::string, std::size_t> tags_;

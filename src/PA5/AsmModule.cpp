@@ -11,16 +11,17 @@ void backend::AsmModule::VisitProgram(parser::Program *program) {
 
     for (const auto &item : defined_classes) {
         GetOrCreateConstFor(item.type);
+        BuildPrototype(item.type);
+        BuildDispatchTable(item.type);
     }
+
+    mips->SetHeapMode();
     for (auto klass: defined_classes) {
         VisitClass(&klass);
     }
 }
 
 void backend::AsmModule::VisitClass(parser::Class *klass) {
-    BuildPrototype(klass->type);
-    BuildDispatchTable(klass->type);
-    mips->SetHeapMode();
     context.EnterClass(*klass);
     BuildInit(*klass);
     if (!type_env_.class_table_.IsBasicClass(klass->type)) {
@@ -145,7 +146,40 @@ void backend::AsmModule::VisitLetExpression(parser::LetExpression *expr) {
     context.PopLocalId();
 }
 
-void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) { throw std::runtime_error("Not implemented: case"); }
+void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) {
+    auto end = NextLabel();
+    auto begin = NextLabel();
+
+    VisitExpression(&*expr->expr);
+    mips->bne(R::acc, R::zero, begin)
+        ->la(R::acc, GetOrCreateConstFor(context.GetFileName()))
+        ->li(R::t1, expr->expr->line_number)
+        ->jal(Names::case_on_void)
+        ->label(begin)
+        ->lw(R::t2, R::acc.Shift(0)); // load tag in t2
+
+    auto reverse_sorted = expr->branches;
+    std::sort(reverse_sorted.begin(), reverse_sorted.end(), [&](auto a, auto b) {
+        return this->GetTagFor(a.type) > this->GetTagFor(b.type);
+    });
+
+    for (const auto& branch: reverse_sorted) {
+        auto next = NextLabel();
+        mips->blt(R::t2, GetTagFor(branch.type), next)
+            ->bgt(R::t2, GetTagForLastChildOf(branch.type), next);
+
+        context.AddLocalId(branch.id->id);
+        mips->push(R::acc);
+        VisitExpression(&*branch.expr);
+        mips->pop();
+        context.PopLocalId();
+
+        mips->b(end)->label(next);
+    }
+
+    mips->jal(Names::case_no_match)->label(end);
+}
+
 void backend::AsmModule::VisitCaseBranchExpression(parser::CaseBranchExpression *expr) {  }
 
 void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {
