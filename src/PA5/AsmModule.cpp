@@ -168,7 +168,9 @@ void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {
 }
 
 void backend::AsmModule::VisitIsVoidExpression(parser::IsVoidExpression *expr) { throw std::runtime_error("Not implemented"); }
-void backend::AsmModule::VisitPlusExpression(parser::PlusExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitPlusExpression(parser::PlusExpression *expr) {
+    VisitBinaryArith(&*expr->lhs, &*expr->rhs, "+");
+}
 void backend::AsmModule::VisitMinusExpression(parser::MinusExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitMulExpression(parser::MulExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) { throw std::runtime_error("Not implemented"); }
@@ -177,6 +179,26 @@ void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) { thr
 void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) { throw std::runtime_error("Not implemented"); }
+
+void backend::AsmModule::VisitBinaryArith(parser::Expression *left, parser::Expression *right, const std::string& op) {
+    VisitExpression(left);
+    context.AddLocalId("");
+    mips->push(R::acc);
+    VisitExpression(right);
+
+    mips->jal(Names::copy)
+        ->pop(R::t1)
+        ->lw(R::t1, R::t1.Shift(12))
+        ->lw(R::t2, R::acc.Shift(12));
+
+    context.PopLocalId();
+    if (op == "+") mips->add(R::t3, R::t1, R::t2);
+    else if (op == "-") mips->sub(R::t3, R::t1, R::t2);
+    else if (op == "*") mips->mul(R::t3, R::t1, R::t2);
+    else if (op == "/") mips->div(R::t3, R::t1, R::t2);
+
+    mips->sw(R::t3, R::acc.Shift(12));
+}
 
 void backend::AsmModule::VisitInBracketsExpression(parser::InBracketsExpression *expr) {
     VisitExpression(&*expr->expr);

@@ -95,6 +95,26 @@ namespace backend {
             return this;
         }
 
+        MIPS* add(const Reg& r1, const Reg& r2, const Reg& r3) {
+            heap_ << "\tadd\t" << r1 << " " << r2 << " " << r3 << "\n";
+            return this;
+        }
+
+        MIPS* sub(const Reg& r1, const Reg& r2, const Reg& r3) {
+            heap_ << "\tsub\t" << r1 << " " << r2 << " " << r3 << "\n";
+            return this;
+        }
+
+        MIPS* mul(const Reg& r1, const Reg& r2, const Reg& r3) {
+            heap_ << "\tmul\t" << r1 << " " << r2 << " " << r3 << "\n";
+            return this;
+        }
+
+        MIPS* div(const Reg& r1, const Reg& r2, const Reg& r3) {
+            heap_ << "\tdiv\t" << r1 << " " << r2 << " " << r3 << "\n";
+            return this;
+        }
+
         // shift left logical
         MIPS* sll(const Reg& r1, const Reg& r2, int arg) {
             heap_ << "\tsll\t" << r1 << " " << r2 << " " << arg << "\n";

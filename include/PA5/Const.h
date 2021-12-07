@@ -60,16 +60,11 @@ namespace backend {
 
         void Serialize(MIPS* mips) const override {
             mips->word("-1")
-                    ->label("str_const" + std::to_string(index))
-                    ->word(std::to_string(str_tag));
-
-            if (!val.empty()) {
-                mips->word(4 + static_cast <int> (std::ceil((val.size() + 1) / 4.0)));
-            } else {
-                mips->word(5);
-            }
-
-            mips->word(Names::FormDispTableName(Names::str_name))->word(size_const);
+                ->label("str_const" + std::to_string(index))
+                ->word(std::to_string(str_tag))
+                ->word(4 + static_cast <int> (std::ceil((val.size() + 1) / 4.0)))
+                ->word(Names::FormDispTableName(Names::str_name))
+                ->word(size_const);
 
             if (!val.empty()) {
                 mips->ascii(val);

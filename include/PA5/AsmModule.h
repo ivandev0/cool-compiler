@@ -45,13 +45,32 @@ namespace backend {
         }
 
     private:
+        static std::size_t CountUnescapedSymbols(const std::string& str) {
+            std::size_t size = 0;
+            if (!str.empty()) {
+                size = 1;
+                for (std::size_t i = 0; i < str.size() - 1; ++i, ++size) {
+                    if (i != str.size() - 1 && str[i] == '\\') {
+                        auto next = str[i + 1];
+                        if (next == 'b' || next == 't' || next == 'n' || next == 'f' || next == '\\' || next == '"' || next == '\n') {
+                            ++i;
+                            --size;
+                        }
+                    }
+                }
+            }
+            return size;
+        }
+
         std::string GetOrCreateConstFor(const std::string& str) {
             for (std::size_t i = 0; i < str_constants_.size(); ++i) {
                 if (str_constants_[i].Match(str)) {
                     return "str_const" + std::to_string(i);
                 }
             }
-            str_constants_.emplace_back(str, GetTagFor(Names::str_name), str_constants_.size(), GetOrCreateConstFor(str.size()));
+
+            std::size_t size = CountUnescapedSymbols(str);
+            str_constants_.emplace_back(str, GetTagFor(Names::str_name), str_constants_.size(), GetOrCreateConstFor(size));
             return "str_const" + std::to_string(str_constants_.size() - 1);
         }
 
@@ -136,7 +155,8 @@ namespace backend {
                     std::vector<parser::AttrFeature> attrs = type_env_.class_table_.GetAttributesOf(klass.type);
                     for (std::size_t i = 0; i < attrs.size(); ++i) {
                         InitVariable(&*attrs[i].expr, attrs[i].type);
-                        mips->sw(R::acc, R::s0.Shift(12 + 4 * i))->genGc(12 + 4 * i);
+                        auto offset = context.GetOffsetForAttr(attrs[i].id.id);
+                        mips->sw(R::acc, R::s0.Shift(offset))->genGc(offset);
                     }
                 }
             }
@@ -232,6 +252,7 @@ namespace backend {
             parser::Expression* expr, const std::string& name, const std::string& type,
             const std::vector<std::shared_ptr<parser::Expression>>& args, bool is_static = false
         );
+        void VisitBinaryArith(parser::Expression *left, parser::Expression *right, const std::string& op);
 
     public:
         virtual ~AsmModule() {
