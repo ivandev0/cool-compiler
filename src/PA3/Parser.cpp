@@ -123,6 +123,7 @@ namespace parser {
 //      | let ID : TYPE [ <- expr ] [[, ID : TYPE [ <- expr ]]] ∗ in expr
 //      | case expr of [[ID : TYPE => expr; ]] + esac
 //      | new TYPE(expr)
+//      | not expr
 //      | (expr)
 //      | ID
 //      | integer
@@ -329,6 +330,8 @@ namespace parser {
             return Expression{{line}, ParseCaseExpression()};
         } else if (next.kind_ == Token::NEW) {
             return Expression{{line}, ParseNewExpression()};
+        } else if (next.kind_ == Token::NOT) {
+            return ParseNotExpression();
         } else if (next.kind_ == Token::OBJECTID) {
             return Expression{{line}, ParseIdExpression()};
         } else if (next.lexeme_ == "(") {
