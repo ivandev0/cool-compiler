@@ -115,6 +115,11 @@ namespace backend {
             return this;
         }
 
+        MIPS* neg(const Reg& r1, const Reg& r2) {
+            heap_ << "\tneg\t" << r1 << " " << r2 << "\n";
+            return this;
+        }
+
         // shift left logical
         MIPS* sll(const Reg& r1, const Reg& r2, int arg) {
             heap_ << "\tsll\t" << r1 << " " << r2 << " " << arg << "\n";

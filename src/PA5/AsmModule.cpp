@@ -145,7 +145,7 @@ void backend::AsmModule::VisitLetExpression(parser::LetExpression *expr) {
     context.PopLocalId();
 }
 
-void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitCaseExpression(parser::CaseExpression *expr) { throw std::runtime_error("Not implemented: case"); }
 void backend::AsmModule::VisitCaseBranchExpression(parser::CaseBranchExpression *expr) {  }
 
 void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {
@@ -167,7 +167,16 @@ void backend::AsmModule::VisitNewExpression(parser::NewExpression *expr) {
         ->jalr(R::t1);
 }
 
-void backend::AsmModule::VisitIsVoidExpression(parser::IsVoidExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitIsVoidExpression(parser::IsVoidExpression *expr) {
+    auto label = NextLabel();
+    VisitExpression(&*expr->expr);
+    mips->move(R::t1, R::acc)
+        ->la(R::acc, GetOrCreateConstFor(true))
+        ->beqz(R::t1, label)
+        ->la(R::acc, GetOrCreateConstFor(false))
+        ->label(label);
+}
+
 void backend::AsmModule::VisitPlusExpression(parser::PlusExpression *expr) {
     VisitBinaryArith(&*expr->lhs, &*expr->rhs, "+");
 }
@@ -184,7 +193,13 @@ void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) {
     VisitBinaryArith(&*expr->lhs, &*expr->rhs, "/");
 }
 
-void backend::AsmModule::VisitInverseExpression(parser::InverseExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitInverseExpression(parser::InverseExpression *expr) {
+    VisitExpression(&*expr->expr);
+    mips->jal(Names::copy)
+        ->lw(R::t1, R::acc.Shift(12))
+        ->neg(R::t1, R::t1)
+        ->sw(R::t1, R::acc.Shift(12));
+}
 
 void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) {
     VisitCompExpression(&*expr->lhs, &*expr->rhs, "<");
@@ -236,7 +251,15 @@ void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) {
         ->label(equals_label);
 }
 
-void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) {
+    auto label = NextLabel();
+    VisitExpression(&*expr->expr);
+    mips->lw(R::t1, R::acc.Shift(12))
+        ->la(R::acc, GetOrCreateConstFor(true))
+        ->beqz(R::t1, label)
+        ->la(R::acc, GetOrCreateConstFor(false))
+        ->label(label);
+}
 
 void backend::AsmModule::VisitBinaryArith(parser::Expression *left, parser::Expression *right, const std::string& op) {
     VisitExpression(left);
