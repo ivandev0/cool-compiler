@@ -187,7 +187,24 @@ void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) {
 void backend::AsmModule::VisitInverseExpression(parser::InverseExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) { throw std::runtime_error("Not implemented"); }
-void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) { throw std::runtime_error("Not implemented"); }
+void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) {
+    auto equals_label = NextLabel();
+
+    VisitExpression(&*expr->lhs);
+    context.AddLocalId("");
+    mips->push(R::acc);
+    VisitExpression(&*expr->rhs);
+
+    mips->move(R::t2, R::acc)
+        ->pop(R::t1);
+    context.PopLocalId();
+
+    mips->la(R::acc, GetOrCreateConstFor(true))
+        ->beq(R::t1, R::t2, equals_label)
+        ->la(R::a1, GetOrCreateConstFor(false))
+        ->jal(Names::equality_test)
+        ->label(equals_label);
+}
 void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) { throw std::runtime_error("Not implemented"); }
 
 void backend::AsmModule::VisitBinaryArith(parser::Expression *left, parser::Expression *right, const std::string& op) {
