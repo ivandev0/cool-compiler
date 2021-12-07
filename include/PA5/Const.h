@@ -67,13 +67,41 @@ namespace backend {
                 ->word(size_const);
 
             if (!val.empty()) {
-                mips->ascii(val);
+                auto splitted = Split(val);
+                if (splitted.size() == 1 && splitted[0].empty()) {
+                    mips->byte(92);
+                } else {
+                    for (std::size_t i = 0; i < splitted.size(); ++i) {
+                        mips->ascii(splitted[i]);
+                        if (i != splitted.size() - 1) mips->byte(92);
+                    }
+                }
             }
             mips->byte(0)->align(2);
         }
 
         bool Match(std::string value) const override {
             return val == value;
+        }
+
+    private:
+        static std::vector<std::string> Split(const std::string& str) {
+            std::vector<std::string> result;
+            std::stringstream stream;
+            for (std::size_t i = 0; i < str.size(); ++i) {
+                if (i != str.size() - 1 && str[i] == '\\' && str[i + 1] == '\\') {
+                    result.push_back(stream.str());
+                    stream.clear();
+                    ++i;
+                } else {
+                    stream << str[i];
+                }
+            }
+
+            if (!stream.eof()) {
+                result.push_back(stream.str());
+            }
+            return result;
         }
     private:
         std::string val;

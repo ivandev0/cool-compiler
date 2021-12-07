@@ -53,7 +53,6 @@ namespace backend {
                     if (i != str.size() - 1 && str[i] == '\\') {
                         auto next = str[i + 1];
                         if (next == 'b' || next == 't' || next == 'n' || next == 'f' || next == '\\' || next == '"' || next == '\n') {
-                            ++i;
                             --size;
                         }
                     }
