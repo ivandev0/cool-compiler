@@ -185,8 +185,38 @@ void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) {
 }
 
 void backend::AsmModule::VisitInverseExpression(parser::InverseExpression *expr) { throw std::runtime_error("Not implemented"); }
-void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) { throw std::runtime_error("Not implemented"); }
-void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) { throw std::runtime_error("Not implemented"); }
+
+void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) {
+    VisitCompExpression(&*expr->lhs, &*expr->rhs, "<");
+}
+
+void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) {
+    VisitCompExpression(&*expr->lhs, &*expr->rhs, "<=");
+}
+
+void backend::AsmModule::VisitCompExpression(parser::Expression *left, parser::Expression *right, const std::string& op) {
+    auto label = NextLabel();
+
+    VisitExpression(left);
+    context.AddLocalId("");
+    mips->push(R::acc);
+    VisitExpression(right);
+
+    mips->move(R::t2, R::acc)
+            ->pop(R::t1);
+    context.PopLocalId();
+
+    mips->lw(R::t1, R::t1.Shift(12))
+        ->lw(R::t2, R::t2.Shift(12))
+        ->la(R::acc, GetOrCreateConstFor(true));
+
+    if (op == "<") mips->blt(R::t1, R::t2, label);
+    else if (op == "<=") mips->ble(R::t1, R::t2, label);
+
+    mips->la(R::acc, GetOrCreateConstFor(false))
+        ->label(label);
+}
+
 void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) {
     auto equals_label = NextLabel();
 
@@ -205,6 +235,7 @@ void backend::AsmModule::VisitEqualExpression(parser::EqualExpression *expr) {
         ->jal(Names::equality_test)
         ->label(equals_label);
 }
+
 void backend::AsmModule::VisitNotExpression(parser::NotExpression *expr) { throw std::runtime_error("Not implemented"); }
 
 void backend::AsmModule::VisitBinaryArith(parser::Expression *left, parser::Expression *right, const std::string& op) {

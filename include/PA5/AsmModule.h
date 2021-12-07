@@ -253,6 +253,7 @@ namespace backend {
             const std::vector<std::shared_ptr<parser::Expression>>& args, bool is_static = false
         );
         void VisitBinaryArith(parser::Expression *left, parser::Expression *right, const std::string& op);
+        void VisitCompExpression(parser::Expression *left, parser::Expression *right, const std::string& op);
 
     public:
         virtual ~AsmModule() {

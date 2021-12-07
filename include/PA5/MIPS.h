@@ -190,6 +190,16 @@ namespace backend {
             return this;
         }
 
+        MIPS* blt(const Reg& r1, const Reg& r2, const std::string& label) {
+            heap_ << "\tblt\t" << r1 << " " << r2 << " " << label << "\n";
+            return this;
+        }
+
+        MIPS* ble(const Reg& r1, const Reg& r2, const std::string& label) {
+            heap_ << "\tble\t" << r1 << " " << r2 << " " << label << "\n";
+            return this;
+        }
+
         void SetHeapMode() {
             heap_mode_ = true;
         }
