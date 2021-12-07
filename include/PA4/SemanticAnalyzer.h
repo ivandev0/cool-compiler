@@ -56,6 +56,7 @@ namespace semant {
         std::string VisitBinaryExpression(T *expr, const std::string& op);
 
         void VisitParentAttrFeature(const std::string &parent);
+        void VisitAttrFeatures(const std::string& type);
 
     private:
         static bool ContainsNoExpr(const std::shared_ptr<parser::Expression>& expr) {

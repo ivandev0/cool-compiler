@@ -19,11 +19,8 @@ std::string semant::SemanticAnalyzer::VisitClass(parser::Class *klass) {
     env_->EnterClass(*klass);
     VisitParentAttrFeature(env_->class_table_.GetParentOf(klass->type));
     CheckAttributesAreUniqueFromParent(*klass);
-    for (auto feature : klass->features) {
-        if (auto data = std::get_if<parser::AttrFeature>(&feature.feature)) {
-            VisitAttrFeature(data);
-        }
-    }
+
+    VisitAttrFeatures(klass->type);
     CheckAttributesAreUnique(*klass);
 
     for (auto feature : klass->features) {
@@ -39,8 +36,14 @@ std::string semant::SemanticAnalyzer::VisitClass(parser::Class *klass) {
 void semant::SemanticAnalyzer::VisitParentAttrFeature(const std::string& parent) {
     if (parent == env_->class_table_.object_class_.type || parent == env_->class_table_.io_class_.type) return;
     VisitParentAttrFeature(env_->class_table_.GetParentOf(parent));
+    VisitAttrFeatures(parent);
+}
 
-    auto attrs = env_->class_table_.GetAttributesOf(parent);
+void semant::SemanticAnalyzer::VisitAttrFeatures(const std::string& type) {
+    auto attrs = env_->class_table_.GetAttributesOf(type);
+    for (auto& attr: attrs) {
+        env_->object_env_.AddIdWithType(attr.id.id, attr.type);
+    }
     for (auto& attr: attrs) {
         VisitAttrFeature(&attr);
     }
@@ -50,8 +53,6 @@ std::string semant::SemanticAnalyzer::VisitAttrFeature(parser::AttrFeature *attr
     if (attrFeature->id.id == "self") {
         throw std::runtime_error("'self' cannot be the name of an attribute.");
     }
-
-    env_->object_env_.AddIdWithType(attrFeature->id.id, attrFeature->type);
 
     if (ContainsNoExpr(attrFeature->expr)) {
         attrFeature->result_type = attrFeature->type;

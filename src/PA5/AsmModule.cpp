@@ -171,9 +171,19 @@ void backend::AsmModule::VisitIsVoidExpression(parser::IsVoidExpression *expr) {
 void backend::AsmModule::VisitPlusExpression(parser::PlusExpression *expr) {
     VisitBinaryArith(&*expr->lhs, &*expr->rhs, "+");
 }
-void backend::AsmModule::VisitMinusExpression(parser::MinusExpression *expr) { throw std::runtime_error("Not implemented"); }
-void backend::AsmModule::VisitMulExpression(parser::MulExpression *expr) { throw std::runtime_error("Not implemented"); }
-void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) { throw std::runtime_error("Not implemented"); }
+
+void backend::AsmModule::VisitMinusExpression(parser::MinusExpression *expr) {
+    VisitBinaryArith(&*expr->lhs, &*expr->rhs, "-");
+}
+
+void backend::AsmModule::VisitMulExpression(parser::MulExpression *expr) {
+    VisitBinaryArith(&*expr->lhs, &*expr->rhs, "*");
+}
+
+void backend::AsmModule::VisitDivExpression(parser::DivExpression *expr) {
+    VisitBinaryArith(&*expr->lhs, &*expr->rhs, "/");
+}
+
 void backend::AsmModule::VisitInverseExpression(parser::InverseExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitLessExpression(parser::LessExpression *expr) { throw std::runtime_error("Not implemented"); }
 void backend::AsmModule::VisitLessOrEqualExpression(parser::LessOrEqualExpression *expr) { throw std::runtime_error("Not implemented"); }
